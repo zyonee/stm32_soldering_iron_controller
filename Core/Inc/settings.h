@@ -19,9 +19,9 @@
 
 #ifndef PROFILE_VALUES
 
-#define T12_Cal250        1100                                      // Default values to be used in the calibration if not adjusted
-#define T12_Cal350        1200                                      // TODO: Move these values to the board profile, so each board can have a closer default calibration
-#define T12_Cal450        1300                                      // But we don't have calibration data from users!
+#define T12_Cal250        1190                                      // Default values to be used in the calibration if not adjusted
+#define T12_Cal350        2021                                      // TODO: Move these values to the board profile, so each board can have a closer default calibration
+#define T12_Cal450        2265                                      // But we don't have calibration data from users!
 
 #define C210_Cal250       300
 #define C210_Cal350       400
