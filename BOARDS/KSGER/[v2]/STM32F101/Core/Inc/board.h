@@ -69,9 +69,9 @@
 #define PROFILE_VALUES                                        // Enable profile values
 
 #ifdef PROFILE_VALUES
-#define T12_Cal250        1600
-#define T12_Cal350        2300
-#define T12_Cal450        3000
+#define T12_Cal250        1190
+#define T12_Cal350        2021
+#define T12_Cal450        2265
 
 #define C210_Cal250       300
 #define C210_Cal350       400
