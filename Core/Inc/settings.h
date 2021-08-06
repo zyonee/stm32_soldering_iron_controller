@@ -34,7 +34,7 @@
 #endif
 
 //#define SWSTRING        "SW: v1.10"                               // For releases
-#define SWSTRING          "SW: 2021-08-04b"                          // For git
+#define SWSTRING          "SW: 2021-08-05"                          // For git
 #define SETTINGS_VERSION  8                                         // Change this if you change the struct below to prevent people getting out of sync
 #define StoreSize         2                                         // In KB
 #define FLASH_ADDR        (0x8000000 + ((FLASH_SZ-StoreSize)*1024)) // Last 2KB flash (Minimum erase size, page size=2KB)
@@ -66,14 +66,11 @@ enum{
   disable                 = 0,
   enable                  = 1,
 
-  debug_Off               = 0,
-  debug_On                = 1,
+  old_reading             = 0,
+  new_reading             = 1,
 
-  calibration_Off         = 0,
-  calibration_On          = 1,
-
-  setup_Off               = 0,
-  setup_On                = 1,
+  read_average            = 0,
+  read_unfiltered         = 1,
 
   encoder_normal          = 0,
   encoder_reverse         = 1,
@@ -87,9 +84,6 @@ enum{
   mode_boost              = 3,
 
   initialized             = 0,
-
-  buzzer_Off              = 0,
-  buzzer_On               = 1,
 
   profile_T12             = 0,
   profile_C245            = 1,
@@ -109,6 +103,8 @@ enum{
   output_Low,
   output_High,
 };
+
+
 typedef struct{
   uint8_t       filter_normal;
   uint8_t       filter_partial;
@@ -178,6 +174,7 @@ typedef struct{
   uint8_t       lvp;
   uint8_t       errorDelay;
   uint8_t       guiUpdateDelay;
+  uint8_t       debugEnabled;
   uint16_t      NTC_Beta;
   uint16_t      Pull_res;
   uint16_t      NTC_res;

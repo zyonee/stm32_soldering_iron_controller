@@ -10,13 +10,8 @@
 
 #include "screen.h"
 
-// Uncomment to enable debug menu
-
-//#define ENABLE_DEBUG_SCREEN
-
 
 extern screen_t Screen_debug;
-extern screen_t Screen_debug2;
 
 void debug_screen_setup(screen_t *scr);
 void debug2_screen_setup(screen_t *scr);

@@ -6,262 +6,522 @@
  */
 
 
+#include <adc_global.h>
+#include <iron.h>
+#include <oled.h>
+#include <pid.h>
+#include <rotary_encoder.h>
+#include <screen_common.h>
+#include <settings.h>
+#include <settings_screen.h>
+#include <ssd1306.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/_stdint.h>
+#include <tempsensors.h>
+#include <u8g2.h>
+#include <widgets.h>
 #include "debug_screen.h"
-#include "screen_common.h"
-
 
 #ifdef ENABLE_DEBUG_SCREEN
-//-------------------------------------------------------------------------------------------------------------------------------
-// Debug screen variables
-//-------------------------------------------------------------------------------------------------------------------------------
-int32_t temp;
-int32_t debugTemperature = 0;
-//-------------------------------------------------------------------------------------------------------------------------------
-// Debug screen widgets
-//-------------------------------------------------------------------------------------------------------------------------------
+
 
 screen_t Screen_debug;
-screen_t Screen_debug2;
+screen_t Screen_pid_debug;
+
+widget_t *widget_setPoint;
+widget_t *widget_Temp;
+
+static int32_t debug_temp = 0;
+static uint8_t update, update_draw;
+#define PID_SZ  95
+typedef struct {
+  uint8_t p[PID_SZ];
+  uint8_t i[PID_SZ];
+  uint8_t d[PID_SZ];
+  uint8_t index;
+  uint8_t i_scale;
+}pid_plot_t;
+
+static pid_plot_t *pidPlot;
 
 
-//-------------------------------------------------------------------------------------------------------------------------------
-// Debug screen widgets functions
-//-------------------------------------------------------------------------------------------------------------------------------
-static void * debug_screen_getADC1() {
-  temp = TIP.last_avg;
-  return &temp;
-}
-static void * debug_screen_getADC1_raw() {
-  temp = TIP.last_raw;
-  return &temp;
+//=========================================================
+
+static int32_t clampValues(int32_t val){
+  if(val>=10000){
+    val=9999;
+  }
+  else if(val<=-10000){
+    val=-9999;
+  }
+  return val;
 }
 
-static void * debug_screen_getIronPower() {
-  //if(UpdateReadings){
-    temp = getCurrentPower();
-  //}
+//=========================================================
+static void * getTemp() {
+  static int32_t value;
+  if(update){
+    value=readTipTemperatureCompensated(old_reading, read_average);
+  }
+  temp=value;
   return &temp;
 }
-static void * getDebugTemperature() {
-  return &debugTemperature;
+//=========================================================
+static void setSetpoint(uint32_t *val) {
+  debug_temp=*val;
+  setDebugTemp(human2adc(debug_temp));
 }
-static void setDebugTemperature(uint16_t *val) {
-  debugTemperature = *val;
-  resetPID();
-  setDebugTemp(debugTemperature);
+static void * getSetpoint() {
+  return &debug_temp;
 }
-static void * getCalcAt250() {
-  temp = getCurrentTip()->calADC_At_250;
+//=========================================================
+static void * get_PID_P() {
+  static int32_t value;
+  if(update){
+    value=clampValues(getPID_P()*1000);
+  }
+  temp=value;
   return &temp;
 }
-static void setCalcAt250(uint16_t *val) {
-  getCurrentTip()->calADC_At_250 = *val;
-}
-static void * getCalcAt350() {
-  temp = getCurrentTip()->calADC_At_350;
+//=========================================================
+static void * get_PID_I() {
+  static int32_t value;
+  if(update){
+    value=clampValues(getPID_I()*1000);
+  }
+  temp=value;
   return &temp;
 }
-static void setCalcAt350(uint16_t *val) {
-  getCurrentTip()->calADC_At_350 = *val;
-}
-static void * getCalcAt450() {
-  temp = getCurrentTip()->calADC_At_450;
+//=========================================================
+static void * get_PID_D() {
+  static int32_t value;
+  if(update){
+    value=clampValues(getPID_D()*1000);
+  }
+  temp=value;
   return &temp;
 }
-static void setCalcAt450(uint16_t *val) {
-  getCurrentTip()->calADC_At_450 = *val;
+//=========================================================
+static void * get_AVG() {
+  static int32_t value;
+  if(update){
+    value=TIP.last_avg;
+  }
+  temp=value;
+  return &temp;
+}
+//=========================================================
+static void * get_RAW() {
+  static int32_t value;
+  if(update){
+    value=TIP.last_raw;
+  }
+  temp=value;
+  return &temp;
+}
+//=========================================================
+static void * get_SET() {
+  static int32_t value;
+  if(update){
+    value=getDebugTemp();
+  }
+  temp=value;
+  return &temp;
+}
+//=========================================================
+static void * get_ERR() {
+  static int32_t value;
+  if(update){
+    value=getPID_Error();
+  }
+  temp=value;
+  return &temp;
+}
+//=========================================================
+static void * get_PWM() {
+  static int32_t value;
+  if(update){
+    value=Iron.Pwm_Out;
+  }
+  temp=value;
+  return &temp;
+}
+//=========================================================
+static void * get_PWR() {
+  static int32_t value;
+  if(update){
+    value=getCurrentPower();
+  }
+  temp=value;
+  return &temp;
+}
+//=========================================================
+static uint8_t scalePlot(int32_t val){
+  val+=10;
+  if(val>20){
+    val=20;
+  }
+  else if(val<0){
+    val=0;
+  }
+  return (uint8_t)val;
+}
+
+void updatePIDplot(void){
+  if(update){
+    pidPlot->p[pidPlot->index] = scalePlot(getPID_P()* 10);
+    pidPlot->i[pidPlot->index] = scalePlot(getPID_I()* pidPlot->i_scale);
+    pidPlot->d[pidPlot->index] = scalePlot(getPID_D()* 10);
+    if(++pidPlot->index>(PID_SZ-1)){
+      pidPlot->index=0;
+    }
+  }
 }
 
 
-//-------------------------------------------------------------------------------------------------------------------------------
-// Debug screen functions
-//-------------------------------------------------------------------------------------------------------------------------------
-int debug_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
+
+
+int debug_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
+
+  update=update_GUI_Timer();
+  update_draw |= update;
+
+  updatePIDplot();
+
   if(input==LongClick){
-                                                  return screen_debug2;
+    return screen_settings;
+  }
+  else if(input==Click){
+    if(scr==&Screen_debug){
+      return screen_pid_debug;
+    }
+    else if(scr==&Screen_pid_debug){
+      return screen_debug;
+    }
+    return -1;
   }
   return (default_screenProcessInput(scr, input, state));
 }
 
-int debug2_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
-  if(input==LongClick){
-    return screen_main;
-  }
-  return (default_screenProcessInput(scr, input, state));
-}
-//-------------------------------------------------------------------------------------------------------------------------------
-// Debug screen functions
-//-------------------------------------------------------------------------------------------------------------------------------
-void debug_screenDraw(screen_t *scr){
-  static uint32_t time=0;
-  if(current_time-time > (systemSettings.settings.guiUpdateDelay*100)){
-    char str[16];
-    time = current_time;
-    u8g2_SetFont(&u8g2,default_font  );
+void debug_Draw(screen_t *scr){
+  if(scr->refresh==screen_Erased){
+    u8g2_SetFont(&u8g2, u8g2_font_small);
     u8g2_SetDrawColor(&u8g2, WHITE);
-    FillBuffer(BLACK,fill_dma);
+    u8g2_DrawStr(&u8g2, 0, 0, "P");
+    u8g2_DrawStr(&u8g2, 0, 11, "I");
+    u8g2_DrawStr(&u8g2, 0, 22, "D");
+    u8g2_DrawStr(&u8g2, 64, 0, "AVG");
+    u8g2_DrawStr(&u8g2, 64, 11, "RAW");
+    u8g2_DrawStr(&u8g2, 64, 22, "SET");
+    u8g2_DrawStr(&u8g2, 64, 33, "ERR");
+    u8g2_DrawStr(&u8g2, 64, 44, "PWM");
+    u8g2_DrawStr(&u8g2, 64, 55, "PWR");
+  }
 
-    sprintf(str, "ADC %u", TIP.last_avg);
-    u8g2_DrawStr(&u8g2,65,0,str);
+  default_screenDraw(scr);
+}
 
-    sprintf(str, "RAW %u", TIP.last_raw);
-    u8g2_DrawStr(&u8g2,65,16,str);
+static void debug_onEnter(screen_t *scr){
 
-    sprintf(str, "PWM %lu", Iron.Pwm_Out);
-    u8g2_DrawStr(&u8g2,60,50,str);
+  editable_widget_t *edit = extractEditablePartFromWidget(widget_setPoint);
+  displayOnly_widget_t *dis = extractDisplayPartFromWidget(widget_Temp);
 
-    sprintf(str, "ERR %ld", (int32_t)getPID_Error());
-    u8g2_DrawStr(&u8g2,65,33,str);
+  if(systemSettings.settings.tempUnit==mode_Celsius){
+    edit->max_value = 450;
+    edit->min_value = 50;
+    edit->big_step = 20;
+    edit->step = 5;
+    edit->inputData.endString="\260C";
+    dis->endString="\260C";
+  }
+  else{
+    edit->max_value = 850;
+    edit->min_value = 120;
+    edit->big_step = 50;
+    edit->step = 10;
+    edit->inputData.endString="\260F";
+    dis->endString="\260F";
+  }
 
-    sprintf(str, "P %ld", (int32_t)(getPID_P()* 1000));
-    u8g2_DrawStr(&u8g2,0,0,str);
+  if(scr==&Screen_settings){
 
-    sprintf(str, "I %ld", (int32_t)(getPID_I()* 1000));
-    u8g2_DrawStr(&u8g2,0,16,str);
+    if(systemSettings.settings.tempUnit==mode_Celsius){
+      debug_temp=100;
+    }
+    else{
+      debug_temp=200;
+    }
 
-    sprintf(str, "D %04ld", (int32_t)(getPID_D()* 1000));
-    u8g2_DrawStr(&u8g2,0,33,str);
+    setDebugTemp(human2adc(debug_temp));
+    setDebugMode(enable);
+
+    pidPlot=_malloc(sizeof(pid_plot_t));
+    pidPlot->index=0;
+    if(!pidPlot){
+      Error_Handler();
+    }
+
+    if(pid.limMaxInt>=1.0f){
+      pidPlot->i_scale = 20;
+    }
+    else{
+      pidPlot->i_scale = (float)20/pid.limMaxInt;
+    }
+
+    memset(pidPlot->p, scalePlot(getPID_P()* 10), PID_SZ);
+    memset(pidPlot->i, scalePlot(getPID_I()* pidPlot->i_scale), PID_SZ);
+    memset(pidPlot->d, scalePlot(getPID_D()* 10), PID_SZ);
+
   }
 }
-static void debug_init(screen_t *scr){
 
-  default_init(scr);
+static void debug_onExit(screen_t *scr){
+  if(scr==&Screen_settings){
+    setDebugMode(disable);
+    _free(pidPlot);
+  }
 }
-//-------------------------------------------------------------------------------------------------------------------------------
-// Debug2 screen functions
-//-------------------------------------------------------------------------------------------------------------------------------
-static void debug2_onExit(screen_t *scr) {
-  setDebugMode(RESET);
-}
-static void debug2_onEnter(screen_t *scr) {
-  setDebugMode(SET);
-  u8g2_SetFont(&u8g2,default_font );
-  u8g2_SetDrawColor(&u8g2, WHITE);
-  u8g2_DrawStr(&u8g2,0,2,"SetP");
-  u8g2_DrawStr(&u8g2,0,18,"C250");
-  u8g2_DrawStr(&u8g2,0,34,"C350");
-  u8g2_DrawStr(&u8g2,0,50,"C450");
-}
-static void debug2_init(screen_t *scr){
 
+
+static void debug_create(screen_t *scr){
   widget_t *w;
   displayOnly_widget_t* dis;
-  editable_widget_t* edit;
+  editable_widget_t *edit;
 
-  //power display
-  newWidget(&w, widget_display, scr);
+  //  [ PID P Widget ]
+  //
+  newWidget(&w, widget_display,scr);
   dis=extractDisplayPartFromWidget(w);
-  dis->endString="%";
-  dis->reservedChars=4;
-  w->posX = 92;
-  w->posY = 50;
-  w->width = 32;
-  dis->getData = &debug_screen_getIronPower;
-  dis->textAlign = align_right;
+  dis->textAlign=align_right;
+  dis->getData = &get_PID_P;
+  dis->reservedChars=6;
+  dis->number_of_dec=3;
+  dis->font=u8g2_font_small;
+  w->posX= 12;
+  w->posY= 0;
+  w->width=30;
 
-  //ADC1 display, filtered
-  newWidget(&w, widget_display, scr);
+  //  [ PID I Widget ]
+  //
+  newWidget(&w, widget_display,scr);
   dis=extractDisplayPartFromWidget(w);
-  dis->reservedChars=4;
-  w->posX = 92;
-  w->posY = 0;
-  w->width = 32;
-  dis->getData = &debug_screen_getADC1;
-  dis->textAlign = align_right;
+  dis->textAlign=align_right;
+  dis->getData = &get_PID_I;
+  dis->reservedChars=6;
+  dis->number_of_dec=3;
+  dis->font=u8g2_font_small;
+  w->posX= 12;
+  w->posY= 11;
+  w->width=30;
 
-  //ADC1 display, unfiltered
-  newWidget(&w, widget_display, scr);
+  //  [ PID D Widget ]
+  //
+  newWidget(&w, widget_display,scr);
   dis=extractDisplayPartFromWidget(w);
-  dis->reservedChars=4;
-  w->posX = 92;
-  w->posY = 16;
-  w->width = 32;
-  dis->getData = &debug_screen_getADC1_raw;
-  dis->textAlign = align_right;
+  dis->textAlign=align_right;
+  dis->getData = &get_PID_D;
+  dis->reservedChars=6;
+  dis->number_of_dec=3;
+  dis->font=u8g2_font_small;
+  w->posX= 12;
+  w->posY= 22;
+  w->width=30;
 
-  //Debug setpoint
-  newWidget(&w, widget_editable, scr);
+  //  [ Current temp Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  widget_Temp = w;
   dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_center;
+  dis->getData = &getTemp;
+  dis->reservedChars=5;
+  dis->font=u8g2_font_small;
+  w->posX= 10;
+  w->posY= 36;
+  w->width=30;
+
+  //  [ Setpoint adjust Widget ]
+  //
+  newWidget(&w, widget_editable,scr);
+  widget_setPoint=w;
   edit=extractEditablePartFromWidget(w);
-  dis->reservedChars=4;
-  w->posX = 36;
-  w->posY = 0;
-  w->width = 40;
-  dis->getData = &getDebugTemperature;
-  edit->big_step = 200;
-  edit->step = 20;
-  edit->max_value = 4095;
-  edit->selectable.tab = 0;
-  edit->setData = (void (*)(void *))&setDebugTemperature;
-
-
-  // Cal at 250
-  newWidget(&w, widget_editable, scr);
   dis=extractDisplayPartFromWidget(w);
-  edit=extractEditablePartFromWidget(w);
-  dis->reservedChars=4;
-  w->posX = 36;
-  w->posY = 16;
-  w->width = 40;
-  dis->getData = &getCalcAt250;
-  edit->big_step = 200;
-  edit->step = 20;
-  edit->max_value = 4095;
-  edit->selectable.tab = 1;
-  edit->setData = (void (*)(void *))&setCalcAt250;
-
-
-  // Cal at 350
-  newWidget(&w, widget_editable, scr);
-  dis=extractDisplayPartFromWidget(w);
-  edit=extractEditablePartFromWidget(w);
-  dis->reservedChars=4;
-  w->posX = 36;
-  w->posY = 32;
-  w->width = 40;
-  dis->getData = &getCalcAt350;
-  edit->big_step = 200;
-  edit->step = 20;
-  edit->max_value = 4095;
-  edit->selectable.tab = 2;
-  edit->setData = (void (*)(void *))&setCalcAt350;
-
-
-  // Cal at 450
-  newWidget(&w, widget_editable, scr);
-  dis=extractDisplayPartFromWidget(w);
-  edit=extractEditablePartFromWidget(w);
-  dis->reservedChars=4;
-  w->posX = 36;
+  dis= &edit->inputData;
+  dis->getData = &getSetpoint;
+  dis->reservedChars=5;
+  //dis->font=u8g2_font_small;
   w->posY = 48;
-  w->width=40;
-  dis->getData = &getCalcAt450;
-  edit->big_step = 200;
-  edit->step = 20;
-  edit->max_value = 4095;
-  edit->selectable.tab = 3;
-  edit->setData = (void (*)(void *))&setCalcAt450;
-  default_init(scr);
+  w->posX = 0;
+  edit->big_step = 20;
+  edit->step = 5;
+  edit->setData = (void (*)(void *))&setSetpoint;
+  edit->selectable.tab=0;
+  edit->selectable.state=widget_edit;
+
+  //  [ Average Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_AVG;
+  dis->reservedChars=5;
+  dis->font=u8g2_font_small;
+  w->posX= 95;
+  w->posY= 0;
+  w->width=30;
+
+  //  [ Raw Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_RAW;
+  dis->reservedChars=5;
+  dis->font=u8g2_font_small;
+  w->posX= 95;
+  w->posY= 11;
+  w->width=30;
+
+  //  [ ADC Setpoint Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_SET;
+  dis->reservedChars=5;
+  dis->font=u8g2_font_small;
+  w->posX= 95;
+  w->posY= 22;
+  w->width=30;
+
+  //  [ PID Error Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_ERR;
+  dis->reservedChars=5;
+  dis->font=u8g2_font_small;
+  w->posX= 95;
+  w->posY= 33;
+  w->width=30;
+
+  //  [ PWM value Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_PWM;
+  dis->reservedChars=5;
+  dis->font=u8g2_font_small;
+  w->posX= 95;
+  w->posY= 44;
+  w->width=30;
+
+  //  [ Power % Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_PWR;
+  dis->reservedChars=5;
+  dis->font=u8g2_font_small;
+  w->posX= 95;
+  w->posY= 55;
+  w->width=30;
+
+  scr->current_widget = widget_setPoint;
+
 }
+
+static void pid_debug_create(screen_t *scr){
+  widget_t *w;
+  displayOnly_widget_t* dis;
+
+  //  [ PID P Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_PID_P;
+  dis->reservedChars=6;
+  dis->number_of_dec=3;
+  dis->font=u8g2_font_small;
+  w->posY= 7;
+  w->width=30;
+
+  //  [ PID I Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_PID_I;
+  dis->reservedChars=6;
+  dis->number_of_dec=3;
+  dis->font=u8g2_font_small;
+  w->posY= 30;
+  w->width=30;
+
+  //  [ PID D Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &get_PID_D;
+  dis->reservedChars=6;
+  dis->number_of_dec=3;
+  dis->font=u8g2_font_small;
+  w->posY= 51;
+  w->width=30;
+}
+
+static void pid_debug_Draw(screen_t * scr){
+  if(update_draw || scr->refresh==screen_Erased){
+    if(update_draw){
+      update_draw=0;
+      FillBuffer(BLACK, fill_dma);
+      scr->refresh=screen_Erased;
+    }
+    for(uint8_t x=1; x<(PID_SZ-1); x++){
+      uint8_t pos=pidPlot->index+x;
+      uint8_t prev;
+      if(pos>(PID_SZ-1)){
+        pos-=PID_SZ;
+      }
+      if(!pos){
+        prev=PID_SZ-1;
+      }
+      else{
+        prev=pos-1;
+      }
+      u8g2_SetDrawColor(&u8g2, WHITE);
+      u8g2_DrawLine(&u8g2, x+(OledWidth-PID_SZ), 20-pidPlot->p[prev], x+(OledWidth-PID_SZ+1), 20-pidPlot->p[pos]);
+      u8g2_DrawLine(&u8g2, x+(OledWidth-PID_SZ), 42-pidPlot->i[prev], x+(OledWidth-PID_SZ+1), 42-pidPlot->i[pos]);
+      u8g2_DrawLine(&u8g2, x+(OledWidth-PID_SZ), 63-pidPlot->d[prev], x+(OledWidth-PID_SZ+1), 63-pidPlot->d[pos]);
+    }
+  }
+  default_screenDraw(scr);
+}
+
 //-------------------------------------------------------------------------------------------------------------------------------
 // Debug screen setup
 //-------------------------------------------------------------------------------------------------------------------------------
 void debug_screen_setup(screen_t *scr) {
+  screen_t *sc;
   screen_setDefaults(scr);
-  scr->processInput = &debug_screenProcessInput;
-  scr->draw = &debug_screenDraw;
-  scr->init = &debug_init;
-}
+  scr->create = &debug_create;
+  scr->onEnter = &debug_onEnter;
+  scr->onExit = &debug_onExit;
+  scr->processInput = &debug_ProcessInput;
+  scr->draw = &debug_Draw;
 
-//-------------------------------------------------------------------------------------------------------------------------------
-// Debug2 screen setup
-//-------------------------------------------------------------------------------------------------------------------------------
-void debug2_screen_setup(screen_t *scr) {
-  screen_setDefaults(scr);
-  scr->processInput = &debug2_screenProcessInput;
-  scr->onEnter = &debug2_onEnter;
-  scr->onExit = &debug2_onExit;
-  scr->init = &debug2_init;
+  sc=&Screen_pid_debug;
+  oled_addScreen(sc, screen_pid_debug);
+  sc->processInput=&debug_ProcessInput;
+  sc->create=&pid_debug_create;
+  sc->draw=&pid_debug_Draw;
+  sc->onExit = &debug_onExit;
 }
 
 #endif
