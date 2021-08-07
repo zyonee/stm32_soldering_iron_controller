@@ -32,11 +32,11 @@ volatile ADCDataTypeDef_t VIN = {
     .adc_buffer     = &ADC_measures[0].VIN,
     .filter.partial_start  = 20,
     .filter.partial_end    = 50,
-    .filter.reset_limit    = 100,
-    .filter.filter_normal  = 2,
-    .filter.filter_partial = 1,
+    .filter.reset_limit    = 2,
+    .filter.filter_normal  = 75,
+    .filter.filter_partial = 50,
     .filter.filter_reset   = 0,
-    .filter.filter_spikes  = 2,
+    .filter.filter_spikes  = 60,
 };
 #endif
 
@@ -45,11 +45,11 @@ volatile ADCDataTypeDef_t NTC = {
     .adc_buffer     = &ADC_measures[0].NTC,
     .filter.partial_start  = 20,
     .filter.partial_end    = 50,
-    .filter.reset_limit    = 100,
-    .filter.filter_normal  = 2,
-    .filter.filter_partial = 1,
+    .filter.reset_limit    = 2,
+    .filter.filter_normal  = 75,
+    .filter.filter_partial = 50,
     .filter.filter_reset   = 0,
-    .filter.filter_spikes  = 2,
+    .filter.filter_spikes  = 60,
 };
 #endif
 
@@ -161,11 +161,13 @@ void ADC_Stop_DMA(void){
  * Some credits: https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
  */
 void DoAverage(volatile ADCDataTypeDef_t* InputData){
+
   volatile uint16_t *inputBuffer=InputData->adc_buffer;
   int32_t adc_sum,avg_data;
   uint16_t max=0, min=0xffff;
   volatile filter_t *f = &InputData->filter;
-  uint8_t shift = f->filter_normal;
+  uint8_t factor = f->filter_normal;
+  float k;
 
   #ifdef DEBUG_PWM
   InputData->prev_avg=InputData->last_avg;
@@ -188,24 +190,21 @@ void DoAverage(volatile ADCDataTypeDef_t* InputData){
   adc_sum -=  (min + max);
 
   // Calculate average
-  avg_data = adc_sum / (ADC_BFSIZ -2) ;
+  avg_data = adc_sum  / (ADC_BFSIZ-2);
   InputData->last_raw = avg_data;
 
-  if(!shift) {                                                                      // Advanced filtering enabled?
-    InputData->last_avg=avg_data;                                                   // No, use simple average
+  // Can't use factor 100, it would use 0% of new data and 100% of old data
+  if(factor==0 || factor>99){
+    InputData->EMA_of_Input = avg_data;
+    InputData->last_avg=avg_data;
     return;
   }
-
-  // Fixed point shift
-  uint32_t RawData = avg_data << 12;
-
-  // Compute EMA of input
 
 #ifdef SELECTIVE_FILTERING
 #if defined DEBUG_PWM && defined SWO_PRINT
   extern bool dbg_newData;
 #endif
-  int32_t diff = (int32_t)avg_data - (int32_t)(InputData->EMA_of_Input>>12);              // Check difference between stored EMA and last average
+  int32_t diff = (int32_t)avg_data - (int32_t)InputData->last_avg;
   int32_t abs_diff=abs(diff);
   if(abs_diff>(f->partial_end) ){
     if(InputData->spike_count<f->spike_limit){
@@ -216,33 +215,33 @@ void DoAverage(volatile ADCDataTypeDef_t* InputData){
     InputData->spike_count=0;
   }
 
-  if((abs_diff>f->partial_end && InputData->spike_count>=f->spike_limit) || (abs_diff>f->reset_limit)){                // If over smooth limit or really huge (Filtering will delay too much the response)
-    shift=f->filter_reset;                                                                                                        // Set filter reset factor
+  if((abs_diff>f->partial_end && InputData->spike_count>=f->spike_limit) || (abs_diff>f->reset_limit)){
+    factor=f->filter_reset;
     #if defined DEBUG_PWM && SWO_PRINT
     dbg_newData=1;                                                                                                                        // Enable flag to debug the data
     #endif
   }
   else{
-    if(abs_diff>f->partial_start && abs_diff<f->partial_end){                                                             // If between partial limits, use partial filter factor
-      shift=f->filter_partial;
+    if(abs_diff>f->partial_start && abs_diff<f->partial_end){
+      factor=f->filter_partial;
       #if defined DEBUG_PWM && SWO_PRINT
-      //dbg_newData=1;                                                                      // Meh, just some noise, not important ?
+      //dbg_newData=1;
       #endif
     }
-    else if(abs_diff>f->partial_end){                                                                                             // If spike detected but not exceeding spike counter limit, use spike filter factor
-      shift=f->filter_spikes;
+    else if(abs_diff>f->partial_end){
+      factor=f->filter_spikes;
     }
   }
-  if(shift){                                                                                                                              // If factor >0
-    InputData->EMA_of_Input = ( ((InputData->EMA_of_Input << shift) - InputData->EMA_of_Input) + RawData +(1<<(shift-1)))>>shift;         // Us EMA filtering
+#endif
+  if(factor>0 && factor<100){
+    k=((float)factor/100);
+    InputData->EMA_of_Input = (InputData->EMA_of_Input*k) + ((float)avg_data*(1.0-k));
   }
   else{
-    InputData->EMA_of_Input = avg_data<<12;                                                                                               // Else, simple average
+    InputData->EMA_of_Input = avg_data;
   }
-#else
-    InputData->EMA_of_Input = ( ((InputData->EMA_of_Input << shift) - InputData->EMA_of_Input) + RawData +(1<<(shift-1)))>>shift;
-#endif
-  InputData->last_avg = InputData->EMA_of_Input>>12;
+
+  InputData->last_avg = (InputData->EMA_of_Input+0.5);
 }
 
 uint16_t ADC_to_mV (uint16_t adc){
@@ -300,13 +299,13 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* _hadc){
       readWake();
     }
     __HAL_TIM_SET_COUNTER(Iron.Pwm_Timer,0);                                                // Synchronize PWM
-
     if(!Iron.Error.safeMode && Iron.CurrentMode!=mode_sleep){
       configurePWMpin(output_PWM);
     }
-
     HAL_IWDG_Refresh(&hiwdg);
     handle_ADC_Data();
+
+
 #if defined DEBUG_PWM && defined SWO_PRINT
     if(dbg_t!=dbg_newData){                                                                 // Save values before handleIron() updates them
       dbg_prev_TIP_Raw=last_TIP_Raw;                                                        // If filter was resetted, print values
