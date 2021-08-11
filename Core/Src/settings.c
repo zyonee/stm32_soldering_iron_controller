@@ -319,12 +319,11 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].calADC_At_250   = T12_Cal250;
       systemSettings.Profile.tip[x].calADC_At_350   = T12_Cal350;     // These values are way lower, but better to be safe than sorry
       systemSettings.Profile.tip[x].calADC_At_450   = T12_Cal450;     // User needs to calibrate its station
-      systemSettings.Profile.tip[x].PID.Kp          = 3500;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.Ki          = 7000;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.Kd          = 1400;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.maxI        = 75;             // val = /100
+      systemSettings.Profile.tip[x].PID.Kp          = 4500;           // val = /1.000.000
+      systemSettings.Profile.tip[x].PID.Ki          = 6000;           // val = /1.000.000
+      systemSettings.Profile.tip[x].PID.Kd          = 1000;           // val = /1.000.000
+      systemSettings.Profile.tip[x].PID.maxI        = 70;             // val = /100
       systemSettings.Profile.tip[x].PID.minI        = 0;              // val = /100
-      systemSettings.Profile.tip[x].PID.tau         = 20;             // val = /100
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);         // Empty name
     }
     strcpy(systemSettings.Profile.tip[0].name, "BC3 ");               // Put some generic name
@@ -350,7 +349,6 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.Kd          = 200;
       systemSettings.Profile.tip[x].PID.maxI        = 10;
       systemSettings.Profile.tip[x].PID.minI        = 0;
-      systemSettings.Profile.tip[x].PID.tau         = 10;
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);
     }
     strcpy(systemSettings.Profile.tip[0].name, "C245");
@@ -375,7 +373,6 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.Kd          = 200;
       systemSettings.Profile.tip[x].PID.maxI        = 10;
       systemSettings.Profile.tip[x].PID.minI        = 0;
-      systemSettings.Profile.tip[x].PID.tau         = 10;
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);
     }
     strcpy(systemSettings.Profile.tip[0].name, "C210");
@@ -392,14 +389,16 @@ void resetCurrentProfile(void){
     Error_Handler();  // We shouldn't get here!
   }
 
-  systemSettings.Profile.tipFilter.filter_normal            = 55;   // % of old data (more %, more filtering)
-  systemSettings.Profile.tipFilter.filter_partial           = 45;
-  systemSettings.Profile.tipFilter.filter_spikes            = 70;
-  systemSettings.Profile.tipFilter.filter_reset             = 0;
-  systemSettings.Profile.tipFilter.partial_start            = 400;
-  systemSettings.Profile.tipFilter.partial_end              = 600;
-  systemSettings.Profile.tipFilter.reset_limit              = 750;
+  systemSettings.Profile.tipFilter.filter_normal            = 75;   // % of old data (more %, more filtering)
+  systemSettings.Profile.tipFilter.reset_limit              = 700;
+  /*
+  systemSettings.Profile.tipFilter.partial_start            = 50;
+  systemSettings.Profile.tipFilter.partial_end              = 400;
   systemSettings.Profile.tipFilter.spike_limit              = 2;
+  systemSettings.Profile.tipFilter.filter_partial           = 50;
+  systemSettings.Profile.tipFilter.filter_spikes            = 60;
+  systemSettings.Profile.tipFilter.filter_reset             = 0;
+  */
   systemSettings.Profile.CalNTC                   = 25;
   systemSettings.Profile.sleepTimeout             = 5;
   systemSettings.Profile.standbyTimeout           = 5;
