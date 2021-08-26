@@ -14,11 +14,13 @@ screen_t Screen_system_ntc;
 
 static comboBox_item_t *comboitem_system_ButtonWakeMode;
 static comboBox_item_t *comboitem_system_ShakeWakeMode;
-static comboBox_item_t *comboitem_system_InitMode;
 static comboBox_item_t *comboitem_system_StandMode;
 static comboBox_item_t *comboitem_system_BootMode;
 
 #ifdef USE_NTC
+static comboBox_item_t *comboitem_PullRes;
+static comboBox_item_t *comboitem_PullMode;
+static comboBox_item_t *comboitem_AutoDetect;
 static comboBox_item_t *comboitem_NTC_res;
 static comboBox_item_t *comboitem_NTC_res_beta;
 static comboBox_item_t *comboitem_Detect_high_res;
@@ -28,11 +30,27 @@ static comboBox_item_t *comboitem_Detect_low_res_beta;
 #endif
 
 static editable_widget_t *editable_system_TempStep;
+static editable_widget_t *editable_system_bigTempStep;
 
-uint8_t backup_Pullup, backup_NTC_detect;
+
+#ifdef USE_NTC
+uint8_t backup_Pullup, backup_NTC_detect, backup_enableNTC;
 uint16_t backup_Pull_res, backup_NTC_res, backup_NTC_Beta, backup_NTC_detect_high_res, backup_NTC_detect_low_res, backup_NTC_detect_high_res_beta, backup_NTC_detect_low_res_beta;
 
-
+void update_NTC_menu(void){
+  uint8_t NTC_auto = (backup_NTC_detect && backup_enableNTC);
+  uint8_t NTC_fixed = (!backup_NTC_detect && backup_enableNTC);
+  comboitem_PullMode->enabled = backup_enableNTC;
+  comboitem_PullRes->enabled =  backup_enableNTC;
+  comboitem_AutoDetect->enabled =  backup_enableNTC;
+  comboitem_NTC_res->enabled = NTC_fixed;
+  comboitem_NTC_res_beta->enabled = NTC_fixed;
+  comboitem_Detect_high_res->enabled = NTC_auto;
+  comboitem_Detect_low_res->enabled = NTC_auto;
+  comboitem_Detect_high_res_beta->enabled = NTC_auto;
+  comboitem_Detect_low_res_beta->enabled = NTC_auto;
+}
+#endif
 //=========================================================
 #ifdef ENABLE_DEBUG_SCREEN
 static void * getDbgScr() {
@@ -52,9 +70,11 @@ static void setTmpUnit(uint32_t *val) {
   setSystemTempUnit(*val);
   if(systemSettings.settings.tempUnit==mode_Farenheit){
     editable_system_TempStep->inputData.endString="\260F";
+    editable_system_bigTempStep->inputData.endString="\260F";
   }
   else{
     editable_system_TempStep->inputData.endString="\260C";
+    editable_system_bigTempStep->inputData.endString="\260C";
   }
 }
 //=========================================================
@@ -65,14 +85,33 @@ static void * getTmpStep() {
 static void setTmpStep(uint32_t *val) {
   systemSettings.settings.tempStep = *val;
 }
+
+//=========================================================
+
+static void * getBigTmpStep() {
+  temp = systemSettings.settings.tempBigStep;
+  return &temp;
+}
+
+static void setBigTmpStep(uint32_t *val) {
+  systemSettings.settings.tempBigStep = *val;
+}
 //=========================================================
 static void * getContrast_() {
-  temp = systemSettings.settings.contrast;
+  temp = systemSettings.settings.contrast/25;
   return &temp;
 }
 static void setContrast_(uint32_t *val) {
-  systemSettings.settings.contrast=*val;
-  setContrast(*val);
+  if(*val==0){
+    systemSettings.settings.contrast=5;
+  }
+  else if(*val==10){
+    systemSettings.settings.contrast=255;
+  }
+  else{
+    systemSettings.settings.contrast=*val*25;
+  }
+  setContrast(systemSettings.settings.contrast);
 }
 //=========================================================
 static void * getOledOffset() {
@@ -112,7 +151,6 @@ static void * getWakeMode() {
 
   comboitem_system_StandMode->enabled       = !mode;
   comboitem_system_BootMode->enabled        = mode;
-  comboitem_system_InitMode->enabled        = mode;
   comboitem_system_ShakeWakeMode->enabled   = mode;
   comboitem_system_ButtonWakeMode->enabled  = mode;
 
@@ -202,9 +240,12 @@ static void system_onEnter(screen_t *scr){
   }
   if(systemSettings.settings.tempUnit==mode_Farenheit){
     editable_system_TempStep->inputData.endString="\260F";
+    editable_system_bigTempStep->inputData.endString="\260F";
   }
   else{
     editable_system_TempStep->inputData.endString="\260C";
+    editable_system_bigTempStep->inputData.endString="\260C";
+
   }
   profile=systemSettings.settings.currentProfile;
 }
@@ -242,11 +283,11 @@ static void system_create(screen_t *scr){
   dis=&edit->inputData;
   dis->reservedChars=3;
   dis->getData = &getContrast_;
-  edit->big_step = 25;
-  edit->step = 25;
+  edit->big_step = 1;
+  edit->step = 1;
   edit->setData = (void (*)(void *))&setContrast_;
-  edit->max_value = 255;
-  edit->min_value = 5;
+  edit->max_value = 10;
+  edit->min_value = 0;
 
   //  [ Oled dimming Widget ]
   //
@@ -255,7 +296,7 @@ static void system_create(screen_t *scr){
   dis->reservedChars=4;
   dis->endString="s";
   dis->getData = &getOledDimming;
-  edit->big_step = 20;
+  edit->big_step = 10;
   edit->step = 5;
   edit->setData = (void (*)(void *))&setOledDimming;
   edit->max_value = 240;
@@ -268,7 +309,7 @@ static void system_create(screen_t *scr){
   dis=&edit->inputData;
   dis->reservedChars=2;
   dis->getData = &getOledOffset;
-  edit->big_step = 10;
+  edit->big_step = 1;
   edit->step = 1;
   edit->setData = (void (*)(void *))&setOledOffset;
   edit->max_value = 15;
@@ -393,9 +434,23 @@ static void system_create(screen_t *scr){
   edit->max_value = 50;
   edit->min_value = 1;
 
+  
+  // [ Temp big step Widget ]
+  //
+  newComboEditable(w, " Big step", &edit, NULL);
+  editable_system_bigTempStep=edit;
+  dis=&edit->inputData;
+  dis->reservedChars=4;
+  dis->getData = &getBigTmpStep;
+  edit->big_step = 5;
+  edit->step = 1;
+  edit->setData = (void (*)(void *))&setBigTmpStep;
+  edit->max_value = 50;
+  edit->min_value = 1;
+  
   //  [ Active detection Widget ]
   //
-  newComboMultiOption(w, "Active det.",&edit,&comboitem_system_InitMode);
+  newComboMultiOption(w, "Active det.",&edit, NULL);
   dis=&edit->inputData;
   dis->getData = &getActiveDetection;
   edit->big_step = 1;
@@ -414,7 +469,7 @@ static void system_create(screen_t *scr){
   dis->reservedChars=5;
   dis->getData = &getLVP;
   dis->number_of_dec = 1;
-  edit->big_step = 10;
+  edit->big_step = 5;
   edit->step = 1;
   edit->setData = (void (*)(void *))&setLVP;
   edit->max_value = 250;
@@ -427,7 +482,7 @@ static void system_create(screen_t *scr){
   dis->endString="ms";
   dis->reservedChars=5;
   dis->getData = &getGuiUpd_ms;
-  edit->big_step = 50;
+  edit->big_step = 20;
   edit->step = 10;
   edit->setData = (void (*)(void *))&setGuiUpd_ms;
   edit->max_value = 250;
@@ -462,6 +517,15 @@ static void system_create(screen_t *scr){
 #ifdef USE_NTC
 
 
+static void set_enable_NTC(uint32_t *val) {
+  backup_enableNTC = *val;
+  update_NTC_menu();
+}
+static void * get_enable_NTC() {
+  temp = backup_enableNTC;
+  return &temp;
+}
+//=========================================================
 static void set_NTC_beta(uint32_t *val) {
   backup_NTC_Beta = *val;
 }
@@ -496,15 +560,10 @@ static void * get_Pull_mode() {
 //=========================================================
 static void set_NTC_detect(uint32_t *val) {
   backup_NTC_detect = *val;
+  update_NTC_menu();
 }
 static void * get_NTC_detect() {
   temp = backup_NTC_detect;
-  comboitem_NTC_res->enabled = (backup_NTC_detect==0);
-  comboitem_NTC_res_beta->enabled = (backup_NTC_detect==0);
-  comboitem_Detect_high_res->enabled = (backup_NTC_detect>0);
-  comboitem_Detect_low_res->enabled = (backup_NTC_detect>0);
-  comboitem_Detect_high_res_beta->enabled = (backup_NTC_detect>0);
-  comboitem_Detect_low_res_beta->enabled = (backup_NTC_detect>0);
   return &temp;
 }
 //=========================================================
@@ -542,6 +601,7 @@ static void * get_NTC_detect_low_res_beta() {
 //=========================================================
 static int saveNTC() {
   __disable_irq();
+  systemSettings.settings.enableNTC=backup_enableNTC;
   systemSettings.settings.NTC_detect=backup_NTC_detect;
   systemSettings.settings.NTC_detect_high_res = backup_NTC_detect_high_res;
   systemSettings.settings.NTC_detect_low_res = backup_NTC_detect_low_res;
@@ -560,6 +620,7 @@ static int saveNTC() {
 
 static void system_ntc_onEnter(screen_t *scr){
   comboResetIndex(Screen_system_ntc.widgets);
+  backup_enableNTC=systemSettings.settings.enableNTC;
   backup_NTC_detect=systemSettings.settings.NTC_detect;
   backup_NTC_detect_high_res=systemSettings.settings.NTC_detect_high_res;
   backup_NTC_detect_low_res=systemSettings.settings.NTC_detect_low_res;
@@ -569,6 +630,7 @@ static void system_ntc_onEnter(screen_t *scr){
   backup_Pull_res=systemSettings.settings.Pull_res;
   backup_NTC_res=systemSettings.settings.NTC_res;
   backup_NTC_Beta=systemSettings.settings.NTC_Beta;
+  update_NTC_menu();
 }
 
 
@@ -581,9 +643,23 @@ static void system_ntc_create(screen_t *scr){
   //
   newWidget(&w,widget_combo,scr);
 
+  //  [ NTC enabled Widget ]
+  //
+  newComboMultiOption(w, "Enable NTC",&edit, NULL);
+  dis=&edit->inputData;
+  dis->reservedChars=3;
+  dis->getData = &get_enable_NTC;
+  edit->big_step = 1;
+  edit->step = 1;
+  edit->setData = (void (*)(void *))&set_enable_NTC;
+  edit->max_value = 1;
+  edit->min_value = 0;
+  edit->options = OffOn;
+  edit->numberOfOptions = 2;
+
   //  [ Pullup mode Widget ]
   //
-  newComboMultiOption(w, "Pull",&edit, NULL);
+  newComboMultiOption(w, "Pull",&edit, &comboitem_PullMode);
   dis=&edit->inputData;
   dis->reservedChars=4;
   dis->getData = &get_Pull_mode;
@@ -597,13 +673,13 @@ static void system_ntc_create(screen_t *scr){
 
   //  [ Pull res Widget ]
   //
-  newComboEditable(w, " Res", &edit, NULL);
+  newComboEditable(w, " Res", &edit, &comboitem_PullRes);
   dis=&edit->inputData;
   dis->number_of_dec=1;
   dis->reservedChars=7;
   dis->endString="K\261";
   dis->getData = &get_Pull_res;
-  edit->big_step = 50;
+  edit->big_step = 10;
   edit->step = 1;
   edit->setData = (void (*)(void *))&set_Pull_res;
   edit->max_value = 5000;
@@ -611,7 +687,7 @@ static void system_ntc_create(screen_t *scr){
 
   //  [ Auto detect Widget ]
   //
-  newComboMultiOption(w, "NTC Detect",&edit, NULL);
+  newComboMultiOption(w, "NTC Detect",&edit, &comboitem_AutoDetect);
   dis=&edit->inputData;
   dis->reservedChars=3;
   dis->getData = &get_NTC_detect;
@@ -631,7 +707,7 @@ static void system_ntc_create(screen_t *scr){
   dis->reservedChars=7;
   dis->endString="K\261";
   dis->getData = &get_NTC_detect_high_res;
-  edit->big_step = 50;
+  edit->big_step = 10;
   edit->step = 1;
   edit->setData = (void (*)(void *))&set_NTC_detect_high_res;
   edit->max_value = 5000;
@@ -643,8 +719,8 @@ static void system_ntc_create(screen_t *scr){
   dis=&edit->inputData;
   dis->reservedChars=5;
   dis->getData = &get_NTC_detect_high_res_beta;
-  edit->big_step = 500;
-  edit->step = 20;
+  edit->big_step = 100;
+  edit->step = 10;
   edit->setData = (void (*)(void *))&set_NTC_detect_high_res_beta;
   edit->max_value = 50000;
   edit->min_value = 500;
@@ -657,7 +733,7 @@ static void system_ntc_create(screen_t *scr){
   dis->reservedChars=7;
   dis->endString="K\261";
   dis->getData = &get_NTC_detect_low_res;
-  edit->big_step = 50;
+  edit->big_step = 10;
   edit->step = 1;
   edit->setData = (void (*)(void *))&set_NTC_detect_low_res;
   edit->max_value = 5000;
@@ -669,8 +745,8 @@ static void system_ntc_create(screen_t *scr){
   dis=&edit->inputData;
   dis->reservedChars=5;
   dis->getData = &get_NTC_detect_low_res_beta;
-  edit->big_step = 500;
-  edit->step = 20;
+  edit->big_step = 100;
+  edit->step = 10;
   edit->setData = (void (*)(void *))&set_NTC_detect_low_res_beta;
   edit->max_value = 50000;
   edit->min_value = 500;
@@ -683,7 +759,7 @@ static void system_ntc_create(screen_t *scr){
   dis->reservedChars=7;
   dis->endString="K\261";
   dis->getData = &get_NTC_res;
-  edit->big_step = 50;
+  edit->big_step = 10;
   edit->step = 1;
   edit->setData = (void (*)(void *))&set_NTC_res;
   edit->max_value = 5000;
@@ -695,8 +771,8 @@ static void system_ntc_create(screen_t *scr){
   dis=&edit->inputData;
   dis->reservedChars=5;
   dis->getData = &get_NTC_beta;
-  edit->big_step = 500;
-  edit->step = 20;
+  edit->big_step = 100;
+  edit->step = 10;
   edit->setData = (void (*)(void *))&set_NTC_beta;
   edit->max_value = 50000;
   edit->min_value = 500;
@@ -708,7 +784,6 @@ static void system_ntc_create(screen_t *scr){
 #endif
 
 void system_screen_setup(screen_t *scr){
-  screen_t *sc;
 
   scr->onEnter = &system_onEnter;
   scr->onExit = &system_onExit;
@@ -716,6 +791,7 @@ void system_screen_setup(screen_t *scr){
   scr->create = &system_create;
 
   #ifdef USE_NTC
+  screen_t *sc;
   sc=&Screen_system_ntc;
   oled_addScreen(sc, screen_ntc);
   sc->onEnter = &system_ntc_onEnter;

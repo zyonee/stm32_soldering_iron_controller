@@ -36,7 +36,7 @@ screen_t Screen_pid_debug;
 widget_t *widget_setPoint;
 widget_t *widget_Temp;
 
-static int32_t debug_temp = 0;
+static int32_t debug_temp;
 static uint8_t update, update_draw;
 #define PID_SZ  95
 typedef struct {
@@ -74,7 +74,6 @@ static void * getTemp() {
 //=========================================================
 static void setSetpoint(uint32_t *val) {
   debug_temp=*val;
-  setDebugTemp(human2adc(debug_temp));
 }
 static void * getSetpoint() {
   return &debug_temp;
@@ -193,13 +192,17 @@ int debug_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
   updatePIDplot();
   refreshOledDim();
   handleOledDim();
+  if(update){
+    setDebugTemp(human2adc(debug_temp));        // Needs to be updated, as the value depends on the NTC temp
+  }
 
   if(input!=Rotate_Nothing){
     screen_timer=current_time;
   }
 
-  if(input==LongClick || ((current_time-screen_timer)>60000)){
-    return screen_settings;
+  if(input==LongClick || ((current_time-screen_timer)>300000)){   // 5 min timeout
+    setCurrentMode(mode_sleep);
+    return screen_main;
   }
   else if(input==Click){
     if(scr==&Screen_debug){
@@ -209,6 +212,9 @@ int debug_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
       return screen_debug;
     }
     return -1;
+  }
+  else if(input==Rotate_Decrement_while_click){
+    return screen_settings;
   }
   return (default_screenProcessInput(scr, input, state));
 }
@@ -263,6 +269,7 @@ static void debug_onEnter(screen_t *scr){
     }
 
     setDebugTemp(human2adc(debug_temp));
+    setCurrentMode(mode_run);
     setDebugMode(enable);
 
     pidPlot=_malloc(sizeof(pid_plot_t));
@@ -286,7 +293,7 @@ static void debug_onEnter(screen_t *scr){
 }
 
 static void debug_onExit(screen_t *scr){
-  if(scr==&Screen_settings){
+  if(scr!=&Screen_debug && scr!=&Screen_pid_debug){
     setDebugMode(disable);
     _free(pidPlot);
   }

@@ -4,9 +4,9 @@
 
 * [Project details](#Details)
 * [Compatibility](#Compatibility)
-* [Operation manual](Readme_files/Operation.md)
+* [Operating instructions](Readme_files/Operation.md)
 * [Frequently asked questions](#faq)
-* [Building](#build)
+* [Building the firmware](#build)
 * [Creating a .ioc file from scratch](Readme_files/Creating_ioc.md)
 * [Additional Documentation](#docs)
 * [Pending or non working features](#pending)
@@ -18,14 +18,6 @@
 Video of operation here: (Project in active development, the features will change continuously)<br>
 
 [![IMAGE ALT TEXT](https://img.youtube.com/vi/j0HQq4aRiXw/0.jpg)](https://www.youtube.com/watch?v=j0HQq4aRiXw "STM32 T12 custom firmware")
-
----
-
-Developing not only takes time, but also costs money.<br>
-When something goes wrong, the results are usually destructive: Tips / handle burning down, sometimes causing damage to the controller.<br>
-
-If you want to support the project, check my Paypal donation page. Thanks!<br>
-[![IMAGE ALT TEXT](/Readme_files/button-donate-paypal.png)](https://www.paypal.com/pools/c/8AHGirfrx2 "Paypal donation page")
 
 ---
 
@@ -45,7 +37,12 @@ If you want to support the project, check my Paypal donation page. Thanks!<br>
 <a id="Compatibility"></a>
 ## Compatibility
 
-The actual requirements are 10KB RAM and 64KB flash. Don't even try if your MCU has less than that.<br>
+The actual requirements are 10KB RAM and 64KB **(\*)** flash.<br>
+**(\*)** Currently the firmware has surpassed the 64KB limit, and uses the additional undocumented 64KB flash block.<br>
+**(\*)** All 64KB devices have 128KB, with the 2nd 64KB block untested from the factory, so not guaranteed to work.<br>
+**(\*)** To date, I have found zero issues. Original KSGER firmware also does this.<br>
+**(\*)** ST-Link checks the written data and the firmware checksums the settings, any error will be detected.<br>
+
 The BOARDS folder has the board code profile, schematics and/or board pictures for quickly identify your hardware.<br>
 Current working controller:<br>
 * Quicko T12 [STABLE]: Profiles for STM32F072 and STM32F103.
@@ -54,9 +51,15 @@ Current working controller:<br>
 * KSGER v2.x [STABLE]: Profile compatible with all STM32F101/2/3xx. Use 101C8 profile.
 * KSGER v3.x [STABLE]: Profile compatible with all STM32F101/2/3xx. Use 101C8 profile.
 
-Keep in mind that you can't trust the version shown in the original firmware to identify your board.<br>
+
+Actually, the easiest way to quickly identify your KGSER version is by looking at the Oled screen connection:<br>
+- **4 pin** (I2C) = v2.x<br>
+- **6 pin** (SPI) = v3.x<br>
+
+Also keep in mind that you can't trust the version shown in the original firmware to identify your board.<br>
 Go to BOARDS/... schematics folder and compare the pictures.<br>
 There are several compatible/cloned boards in the market that will work fine with Ksger profiles.<br>
+
 
 ---
 
@@ -75,8 +78,10 @@ There are some hacks / vulnerabilities that can be used to backup protected firm
 )**<br>
 
 ### Flashing the firmware
+There's no support for custom bootloaders.<br>
 Download the binary **STM32SolderingStation.bin** already compiled from the /BOARDS folder and flash it using stlink.<br>
-There's no support for custom bootloaders, and there won't be, as flash is almost full in 64KB devices.<br>
+You don't need to erase the whole flash, that way you can preserve the settings when you updating to a new version.<br>
+The firmware will check and reset the settings if it finds out an uncompatible version, this happoens when the settings structure has changed.<br>
 Use one of these ST-LINK clones ($3 or less), refer to the schematics for the SWD pinout.<br>
 ### Display issues<br>
 If the display has right/left line like this picture: Go to [System menu](Readme_files/Operation.md#system) / Offset and adjust the value until it's centered.<br>
@@ -123,7 +128,7 @@ https://www.eevblog.com/forum/reviews/stm32-oled-digital-soldering-station-for-t
 ---
 
 <a id="build"></a>     
-## Building
+## Building the firmware
 
 Video of building steps:<br>
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/8oeGVSSxudk/0.jpg)](https://www.youtube.com/watch?v=8oeGVSSxudk "Firmware build")
@@ -190,8 +195,9 @@ And then copy the board profile files overwriting any existing files.<br>
            
 <a id="pending"></a>
 ### Non working features
-* I2C eeprom. Some boards have it, some doesn't. So internal flash storage is used for all.
-* RTC clock. There's very little space in the screen. Use it for what matters, instead showing a clock!
+* I2C eeprom. Some boards have it, some doesn't. So internal flash storage is used for all.<br>
+Also, the current settings don't fit in the commonly used 24C08 memory.<br>
+* RTC clock. There's very little space in the screen. Use it for what matters, instead for showing a clock!
 
 ---
 

@@ -74,6 +74,16 @@ static void setImin(int32_t *val) {
   tipCfg.PID.minI= *val;
 }
 //=========================================================
+/*
+static void * getTau() {
+  temp = tipCfg.PID.tau;
+  return &temp;
+}
+static void setTau(int32_t *val) {
+  tipCfg.PID.tau= *val;
+}
+*/
+//=========================================================
 static void * getCal250() {
   temp = tipCfg.calADC_At_250;
   return &temp;
@@ -102,15 +112,15 @@ static void setCal450(int32_t *val) {
 }
 //=========================================================
 static int tip_save() {
-  __disable_irq();
   systemSettings.Profile.tip[Selected_Tip] = tipCfg;                                                            // Store tip data
   if(Selected_Tip==systemSettings.Profile.currentTip){                                                          // If current used tip, update PID
+    __disable_irq();
     setCurrentTip(Selected_Tip);                                                                                // Reload tip settings
+    __enable_irq();
   }
   else if(Selected_Tip==systemSettings.Profile.currentNumberOfTips){                                            // If new tip
     systemSettings.Profile.currentNumberOfTips++;                                                               // Increase number of tips in the system
   }
-  __enable_irq();
   return comboitem_tip_settings_cancel->action_screen;
 }
 //=========================================================
@@ -118,6 +128,14 @@ static int tip_delete() {
   char name[TipCharSize]=_BLANK_TIP;
   systemSettings.Profile.currentNumberOfTips--;                                                                 // Decrease the number of tips in the system
 
+  if(Selected_Tip==systemSettings.Profile.currentTip){                                                          // If deleted tip was the current being used
+    if(systemSettings.Profile.currentTip){                                                                      // If not zero
+      systemSettings.Profile.currentTip--;                                                                      // Select previous tip
+    }
+    __disable_irq();
+    setCurrentTip(systemSettings.Profile.currentTip);                                                           // Reload tip settings
+    __enable_irq();
+  }
 
   for(int x = Selected_Tip; x < TipSize-1;x++) {                                                                // Overwrite selected tip and move the rest one position backwards
     systemSettings.Profile.tip[x] = systemSettings.Profile.tip[x+1];
@@ -125,12 +143,6 @@ static int tip_delete() {
 
   for(int x = systemSettings.Profile.currentNumberOfTips; x < TipSize;x++) {                                    // Fill the unused tips with blank names
     strcpy(systemSettings.Profile.tip[x].name, name);
-  }
-  if(Selected_Tip==systemSettings.Profile.currentTip){                                                          // If deleted tip was the current being used
-    if(systemSettings.Profile.currentTip){                                                                      // If not zero
-      systemSettings.Profile.currentTip--;                                                                      // Select previous tip
-      setCurrentTip(systemSettings.Profile.currentTip);                                                         // Reload tip settings
-    }
   }
                                                                                                                 // Skip tip settings (As tip is now deleted)
   return comboitem_tip_settings_cancel->action_screen;                                                          // And return to main screen or system menu screen
@@ -152,6 +164,8 @@ static int tip_settings_processInput(screen_t * scr, RE_Rotation_t input, RE_Sta
   static uint32_t last_update=0;
   bool update=0;
 
+  refreshOledDim();
+  handleOledDim();
   updatePlot();
 
   if(input==LongClick){
@@ -171,7 +185,19 @@ static int tip_settings_processInput(screen_t * scr, RE_Rotation_t input, RE_Sta
     last_update=current_time;
     update=1;
   }
- if(update){
+
+  if(input==Rotate_Decrement_while_click){
+   comboBox_item_t *item = ((comboBox_widget_t*)scr->current_widget->content)->currentItem;
+    if(item->type==combo_Editable || item->type==combo_MultiOption){
+      if(item->widget->selectable.state!=widget_edit){
+        return return_screen;
+      }
+    }
+    else{
+      return return_screen;
+    }
+  }
+  if(update){
     bool enable=1;
     if(strcmp(tipCfg.name, _BLANK_TIP) == 0){                                                                   // Check that the name is not empty
       enable=0;                                                                                                 // If empty, disable save button
@@ -275,7 +301,7 @@ static void tip_settings_create(screen_t *scr){
   dis->getData = &getTipName;
   dis->type = field_string;
   dis->displayString=tipCfg.name;
-  edit->big_step = 10;
+  edit->big_step = 1;
   edit->step = 1;
   edit->selectable.tab = 0;
   edit->setData = (void (*)(void *))&setTipName;
@@ -289,7 +315,7 @@ static void tip_settings_create(screen_t *scr){
   dis->getData = &getKp;
   dis->number_of_dec = 2;
   edit->max_value=65000;
-  edit->big_step = 500;
+  edit->big_step = 200;
   edit->step = 50;
   edit->setData =  (void (*)(void *))&setKp;
 
@@ -302,7 +328,7 @@ static void tip_settings_create(screen_t *scr){
   dis->getData = &getKi;
   dis->number_of_dec = 2;
   edit->max_value=65000;
-  edit->big_step = 500;
+  edit->big_step = 200;
   edit->step = 50;
   edit->setData = (void (*)(void *))&setKi;
 
@@ -315,7 +341,7 @@ static void tip_settings_create(screen_t *scr){
   dis->getData = &getKd;
   dis->number_of_dec = 2;
   edit->max_value=65000;
-  edit->big_step = 500;
+  edit->big_step = 200;
   edit->step = 50;
   edit->setData = (void (*)(void *))&setKd;
 
@@ -328,7 +354,7 @@ static void tip_settings_create(screen_t *scr){
   dis->getData = &getImax;
   dis->number_of_dec = 2;
   edit->max_value=1000;
-  edit->big_step = 20;
+  edit->big_step = 5;
   edit->step = 1;
   edit->setData = (void (*)(void *))&setImax;
 
@@ -341,10 +367,23 @@ static void tip_settings_create(screen_t *scr){
   dis->number_of_dec = 2;
   edit->max_value = 0;
   edit->min_value = -1000;
-  edit->big_step = -20;
+  edit->big_step = -5;
   edit->step = -1;
   edit->setData = (void (*)(void *))&setImin;
-
+/*
+  //[ Tau Widget ]
+  //
+  newComboEditable(w, "PID tau", &edit, NULL);
+  dis=&edit->inputData;
+  dis->reservedChars=6;
+  dis->getData = &getTau;
+  dis->number_of_dec = 2;
+  edit->max_value = 200;
+  edit->min_value = 0;
+  edit->big_step = 10;
+  edit->step = 1;
+  edit->setData = (void (*)(void *))&setTau;
+*/
   //[ Cal250 Widget ]
   //
   newComboEditable(w, "Cal250", &edit, NULL);
@@ -354,7 +393,7 @@ static void tip_settings_create(screen_t *scr){
   dis->getData = &getCal250;
   edit->max_value = 4090;
   edit->min_value = 0;
-  edit->big_step = 50;
+  edit->big_step = 10;
   edit->step = 1;
   edit->setData = (void (*)(void *))&setCal250;
 
@@ -368,7 +407,7 @@ static void tip_settings_create(screen_t *scr){
   dis->getData = &getCal350;
   edit->max_value = 4090;
   edit->min_value = 0;
-  edit->big_step = 50;
+  edit->big_step = 10;
   edit->step = 1;
   edit->setData = (void (*)(void *))&setCal350;
 
@@ -382,7 +421,7 @@ static void tip_settings_create(screen_t *scr){
   dis->getData = &getCal450;
   edit->max_value = 4090;
   edit->min_value = 0;
-  edit->big_step = 50;
+  edit->big_step = 10;
   edit->step = 1;
   edit->setData = (void (*)(void *))&setCal450;
 

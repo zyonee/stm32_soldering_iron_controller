@@ -271,7 +271,8 @@ void resetSystemSettings(void) {
   systemSettings.settings.errorDelay        = 1;                    // *100mS
   systemSettings.settings.guiUpdateDelay    = 200;
   systemSettings.settings.tempUnit          = mode_Celsius;
-  systemSettings.settings.tempStep          = 10;                   // 10º steps
+  systemSettings.settings.tempStep          = 5;                    // 5º steps
+  systemSettings.settings.tempBigStep       = 20;                   // 20º big steps
   systemSettings.settings.activeDetection   = true;
   systemSettings.settings.saveSettingsDelay = 5;                    // 5s
   systemSettings.settings.lvp               = 110;                  // 11.0V Low voltage
@@ -286,7 +287,8 @@ void resetSystemSettings(void) {
   systemSettings.settings.debugEnabled      = disable;
   systemSettings.settings.NotInitialized    = initialized;
 
-#ifdef USE_NTC
+  #ifdef USE_NTC
+  systemSettings.settings.enableNTC         = 1;
   #ifdef PULLUP
   systemSettings.settings.Pullup            = 1;
   #elif defined PULLDOWN
@@ -302,7 +304,9 @@ void resetSystemSettings(void) {
   systemSettings.settings.Pull_res          = PULL_RES/100;
   systemSettings.settings.NTC_res           = NTC_RES/100;
   systemSettings.settings.NTC_Beta          = NTC_BETA;
-#endif
+  #else
+  systemSettings.settings.enableNTC         = 0;
+  #endif
 
   __enable_irq();
 }
@@ -319,11 +323,12 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].calADC_At_250   = T12_Cal250;
       systemSettings.Profile.tip[x].calADC_At_350   = T12_Cal350;     // These values are way lower, but better to be safe than sorry
       systemSettings.Profile.tip[x].calADC_At_450   = T12_Cal450;     // User needs to calibrate its station
-      systemSettings.Profile.tip[x].PID.Kp          = 4500;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.Ki          = 6000;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.Kd          = 1000;           // val = /1.000.000
+      systemSettings.Profile.tip[x].PID.Kp          = 7500;           // val = /1.000.000
+      systemSettings.Profile.tip[x].PID.Ki          = 4800;           // val = /1.000.000
+      systemSettings.Profile.tip[x].PID.Kd          = 1200;           // val = /1.000.000
       systemSettings.Profile.tip[x].PID.maxI        = 70;             // val = /100
       systemSettings.Profile.tip[x].PID.minI        = 0;              // val = /100
+      systemSettings.Profile.tip[x].PID.tau         = 20;             // val = /100
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);         // Empty name
     }
     strcpy(systemSettings.Profile.tip[0].name, "BC3 ");               // Put some generic name
@@ -349,6 +354,7 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.Kd          = 200;
       systemSettings.Profile.tip[x].PID.maxI        = 10;
       systemSettings.Profile.tip[x].PID.minI        = 0;
+      systemSettings.Profile.tip[x].PID.tau         = 20;             // val = /100
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);
     }
     strcpy(systemSettings.Profile.tip[0].name, "C245");
@@ -373,6 +379,7 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.Kd          = 200;
       systemSettings.Profile.tip[x].PID.maxI        = 10;
       systemSettings.Profile.tip[x].PID.minI        = 0;
+      systemSettings.Profile.tip[x].PID.tau         = 20;             // val = /100
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);
     }
     strcpy(systemSettings.Profile.tip[0].name, "C210");
@@ -389,16 +396,14 @@ void resetCurrentProfile(void){
     Error_Handler();  // We shouldn't get here!
   }
 
-  systemSettings.Profile.tipFilter.filter_normal            = 75;   // % of old data (more %, more filtering)
-  systemSettings.Profile.tipFilter.reset_limit              = 700;
-  /*
-  systemSettings.Profile.tipFilter.partial_start            = 50;
-  systemSettings.Profile.tipFilter.partial_end              = 400;
-  systemSettings.Profile.tipFilter.spike_limit              = 2;
-  systemSettings.Profile.tipFilter.filter_partial           = 50;
-  systemSettings.Profile.tipFilter.filter_spikes            = 60;
-  systemSettings.Profile.tipFilter.filter_reset             = 0;
-  */
+  systemSettings.Profile.tipFilter.coefficient      = 95;   // % of old data (more %, more filtering)
+  systemSettings.Profile.tipFilter.threshold        = 40;
+  systemSettings.Profile.tipFilter.min              = 60;   // Don't go below xxx % when decreasing after exceeding threshold limits
+  systemSettings.Profile.tipFilter.count_limit      = 0;
+  systemSettings.Profile.tipFilter.step             = -3;   // -5% less everytime the reading diff exceeds threshold_limit and the counter is greater than count_limit
+  systemSettings.Profile.tipFilter.reset_threshold  = 800;  // Any diff over 500 reset the filter (Tip removed or connected)
+
+
   systemSettings.Profile.CalNTC                   = 25;
   systemSettings.Profile.sleepTimeout             = 5;
   systemSettings.Profile.standbyTimeout           = 5;

@@ -34,7 +34,7 @@
 #endif
 
 //#define SWSTRING        "SW: v1.10"                               // For releases
-#define SWSTRING          "SW: 2021-08-11"                          // For git
+#define SWSTRING          "SW: 2021-08-25"                          // For git
 #define SETTINGS_VERSION  10                                         // Change this if you change the struct below to prevent people getting out of sync
 #define StoreSize         2                                         // In KB
 #define FLASH_ADDR        (0x8000000 + ((FLASH_SZ-StoreSize)*1024)) // Last 2KB flash (Minimum erase size, page size=2KB)
@@ -106,16 +106,13 @@ enum{
 
 
 typedef struct{
-  uint8_t       filter_normal;
-  uint16_t      reset_limit;
-  /*
-  uint8_t       filter_partial;
-  uint8_t       filter_spikes;
-  uint8_t       filter_reset;
-  uint16_t      partial_start;
-  uint16_t      partial_end;
-  uint8_t       spike_limit;
-  */
+  int8_t        coefficient;          // Filter normally applied
+  int8_t        counter;              // Counter for threshold limit
+  int8_t        min;                  // Minimum filtering when decreasing
+  int8_t        step;                 // Start decreasing the filter coefficient, assume it's a fast temperature change, so provide faster response
+  int8_t        count_limit;          // Count the spikes, if exceeding this limit, start reducing the filter coefficient.
+  uint16_t      threshold;            // Base noise limit, if diff exceeds this limit, trigger threshold limit and start decreasing filtering
+  uint16_t      reset_threshold;      // Threshold for completely resetting the filter
 }filter_t;
 
 typedef struct{
@@ -162,6 +159,7 @@ typedef struct{
   uint8_t       saveSettingsDelay;
   uint8_t       initMode;
   uint8_t       tempStep;
+  uint8_t       tempBigStep;
   uint8_t       screenDimming;
   uint8_t       tempUnit;
   uint8_t       activeDetection;
@@ -179,6 +177,7 @@ typedef struct{
   uint8_t       debugEnabled;
   uint16_t      NTC_Beta;
   uint16_t      Pull_res;
+  uint16_t      enableNTC;
   uint16_t      NTC_res;
   uint16_t      NTC_detect_high_res;
   uint16_t      NTC_detect_low_res;

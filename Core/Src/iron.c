@@ -20,6 +20,7 @@
 #define __BASE_FILE__ "iron.c"
 #endif
 
+static volatile uint32_t CurrentTime;
 volatile iron_t Iron;
 typedef struct setTemperatureReachedCallbackStruct_t setTemperatureReachedCallbackStruct_t;
 
@@ -75,11 +76,13 @@ void ironInit(TIM_HandleTypeDef *delaytimer, TIM_HandleTypeDef *pwmtimer, uint32
     }
   }
   initTimers();
+  #ifdef USE_NTC
   detectNTC();
+  #endif
 }
 
 void handleIron(void) {
-  uint32_t CurrentTime = HAL_GetTick();
+  CurrentTime = HAL_GetTick();
 
   readTipTemperatureCompensated(new_reading, read_average);     // Update readings
   readColdJunctionSensorTemp_x10(new_reading, mode_Celsius);
@@ -93,7 +96,6 @@ void handleIron(void) {
   }
 
   checkIronError();
-
   // Controls external mode changes (from stand mode changes), this acts as a debouncing timer
   if(Iron.updateStandMode==needs_update){
     if(Iron.Error.active){
@@ -158,7 +160,7 @@ void handleIron(void) {
     Iron.Pwm_Out = calculatePID(Iron.Debug_SetTemperature, TIP.last_avg, Iron.Pwm_Max);
   }
   else{                                                                                       // Else, use current setpoint value
-    PID_temp = human2adc(Iron.CurrentSetTemperature);
+    PID_temp = (human2adc(Iron.CurrentSetTemperature) + human2adc(Iron.CurrentSetTemperature+1))/2;   // +0.5C for better display stability
     Iron.Pwm_Out = calculatePID(PID_temp, TIP.last_avg, Iron.Pwm_Max);
   }
 
@@ -201,6 +203,7 @@ uint16_t round_10(uint16_t input){
 // Changes the system temperature unit
 void setSystemTempUnit(bool unit){
 
+  __disable_irq();
   if(systemSettings.Profile.tempUnit != unit){
     systemSettings.Profile.tempUnit = unit;
     systemSettings.Profile.UserSetTemperature = round_10(TempConversion(systemSettings.Profile.UserSetTemperature,unit,0));
@@ -211,6 +214,7 @@ void setSystemTempUnit(bool unit){
 
   systemSettings.settings.tempUnit = unit;
   setCurrentMode(Iron.CurrentMode);     // Reload temps
+  __enable_irq();
 }
 
 // This function inits the timers and sets the prescaler settings depending on the system core clock
@@ -261,18 +265,24 @@ void initTimers(void){
 }
 
 void setReadDelay(uint16_t delay){
+  __disable_irq();
  systemSettings.Profile.readDelay=delay;
+  __enable_irq();
 }
 
 
 void setReadPeriod(uint16_t period){
+  __disable_irq();
  systemSettings.Profile.readPeriod=period;
  Iron.updatePwm=1;
+  __enable_irq();
 }
 
 void setPwmMul(uint16_t mult){
+  __disable_irq();
   systemSettings.Profile.pwmMul=mult;
   Iron.updatePwm=1;
+  __enable_irq();
 }
 
 void configurePWMpin(uint8_t mode){
@@ -416,7 +426,9 @@ void updatePowerLimit(void){
 
 // Sets no Iron detection threshold
 void setNoIronValue(uint16_t noiron){
+  __disable_irq();
   systemSettings.Profile.noIronValue=noiron;
+  __enable_irq();
 }
 
 // Change the iron operating mode in stand mode
@@ -427,16 +439,20 @@ void setModefromStand(uint8_t mode){
       ((Iron.CurrentMode==mode_boost) && (mode==mode_run)) ){
     return;
   }
+  __disable_irq();
   if(Iron.changeMode!=mode){
     Iron.changeMode = mode;                                                                 // Update mode
     Iron.LastModeChangeTime = HAL_GetTick();                                                // Reset debounce timer
   }
-  Iron.updateStandMode = needs_update;                                                           // Set flag
+  Iron.updateStandMode = needs_update;                                                      // Set flag
+  __enable_irq();
 }
 
 // Set the iron operating mode
 void setCurrentMode(uint8_t mode){
-  Iron.CurrentModeTimer = HAL_GetTick();                                                    // Refresh current mode timer
+  __disable_irq();
+  CurrentTime=HAL_GetTick();                                                              // Update local time value just in case it's called by handleIron, to avoid drift
+  Iron.CurrentModeTimer = CurrentTime;                                                    // Refresh current mode timer
   if(mode==mode_standby){
     Iron.CurrentSetTemperature = systemSettings.Profile.standbyTemperature;                 // Set standby temp
   }
@@ -458,6 +474,7 @@ void setCurrentMode(uint8_t mode){
       Iron.temperatureReached = 0;
     }
   }
+  __enable_irq();
 }
 
 // Called from program timer if WAKE change is detected
@@ -481,7 +498,9 @@ void IronWake(bool source){                                                     
     }
   }
   if(Iron.CurrentMode<mode_boost){
+    __disable_irq();
     setCurrentMode(mode_run);
+    __enable_irq();
   }
 }
 
@@ -510,7 +529,7 @@ void readWake(void){
 
 // Checks for non critical iron errors (Errors that can be cleared)
 void checkIronError(void){
-  uint32_t CurrentTime = HAL_GetTick();
+  CurrentTime = HAL_GetTick();
   int16_t ambTemp = readColdJunctionSensorTemp_x10(old_reading, mode_Celsius);
   IronError_t Err = { 0 };
   Err.safeMode = Iron.Error.safeMode;
@@ -540,7 +559,7 @@ void checkIronError(void){
     }
   }
   else if (Iron.Error.active && !Err.Flags){                                                // If global flag set, but no errors
-    if((CurrentTime-Iron.LastErrorTime)>(systemSettings.settings.errorDelay*100)){                // Check enough time has passed
+    if((CurrentTime-Iron.LastErrorTime)>(systemSettings.settings.errorDelay*100)){          // Check enough time has passed
       Iron.Error.Flags = 0;
       buzzer_alarm_stop();
       setCurrentMode(mode_run);
@@ -557,6 +576,7 @@ bool GetIronError(void){
 }
 
 void setSafeMode(bool mode){
+  __disable_irq();
   if(mode==disable && Iron.Error.Flags==(_ACTIVE |_SAFE_MODE)){                             // If only failsafe was active? (This should only happen because it was on first init screen)
     Iron.Error.Flags = _NOERROR;
     setCurrentMode(mode_run);
@@ -568,6 +588,7 @@ void setSafeMode(bool mode){
     Iron.Error.safeMode=mode;
     checkIronError();
   }
+  __enable_irq();
 }
 
 
@@ -576,7 +597,9 @@ bool GetSafeMode() {
 }
 
 void setDebugTemp(uint16_t value) {
+  __disable_irq();
   Iron.Debug_SetTemperature = value;
+  __enable_irq();
 }
 
 uint16_t getDebugTemp(void){
@@ -584,13 +607,16 @@ uint16_t getDebugTemp(void){
 }
 
 void setDebugMode(uint8_t value) {
+  __disable_irq();
   Iron.DebugMode = value;
+  __enable_irq();
 }
 uint8_t getDebugMode(void){
   return Iron.DebugMode;
 }
 
 void setUserTemperature(uint16_t temperature) {
+  __disable_irq();
   Iron.temperatureReached = 0;
   if(systemSettings.Profile.UserSetTemperature != temperature){
     systemSettings.Profile.UserSetTemperature = temperature;
@@ -599,6 +625,7 @@ void setUserTemperature(uint16_t temperature) {
       resetPID();
     }
   }
+  __enable_irq();
 }
 
 uint16_t getUserTemperature() {

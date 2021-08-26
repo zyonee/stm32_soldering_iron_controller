@@ -500,7 +500,9 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
           }
           if(tip!=systemSettings.Profile.currentTip){
             systemSettings.Profile.currentTip = tip;
+            __disable_irq();
             setCurrentTip(tip);
+            __enable_irq();
             Screen_main.refresh=screen_Erase;
           }
           break;
@@ -530,12 +532,7 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
           break;
 
         case Rotate_Increment_while_click:
-          input=Rotate_Increment;
-          break;
-
         case Rotate_Decrement_while_click:
-          input=Rotate_Decrement;
-
         default:
           break;
       }
@@ -752,13 +749,11 @@ void drawAux(uint8_t *refresh){
   u8g2_SetFont(&u8g2, u8g2_font_small);
   if(frame){
     uint8_t len = u8g2_GetStrWidth(&u8g2, tipNames[systemSettings.Profile.currentTip])+4;   // Draw edit frame
-    u8g2_SetDrawColor(&u8g2, WHITE);
     u8g2_DrawRBox(&u8g2, 0, 54, len, 10, 2);
+    u8g2_SetDrawColor(&u8g2, BLACK);
   }
-  u8g2_SetDrawColor(&u8g2, XOR);
   u8g2_DrawStr(&u8g2, 2, 54, tipNames[systemSettings.Profile.currentTip]);                  // Draw tip name
   u8g2_SetDrawColor(&u8g2, WHITE);
-
 }
 
 void main_screen_draw(screen_t *scr){
@@ -808,7 +803,7 @@ static void main_screen_init(screen_t *scr) {
 
   edit = extractEditablePartFromWidget(Widget_SetPoint);
   edit->step = systemSettings.settings.tempStep;
-  edit->big_step = systemSettings.settings.tempStep;
+  edit->big_step = systemSettings.settings.tempBigStep;
   edit->max_value = systemSettings.Profile.MaxSetTemperature;
   edit->min_value = systemSettings.Profile.MinSetTemperature;
   setMainScrTempUnit();
@@ -885,7 +880,7 @@ static void main_screen_create(screen_t *scr){
   dis->font=u8g2_font_small;
   dis->getData = &main_screen_getAmbTemp;
   w->posY = 0;
-  //w->posX = 90;
+  w->width = 38;
   #endif
 }
 

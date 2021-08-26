@@ -29,28 +29,52 @@ volatile ADCDataTypeDef_t TIP = {
 
 #ifdef USE_VIN
 volatile ADCDataTypeDef_t VIN = {
-    .adc_buffer     = &ADC_measures[0].VIN,
-    .filter.filter_normal  = 75,
-    .filter.reset_limit  = 50,
+    .adc_buffer             = &ADC_measures[0].VIN,
+    .filter.coefficient     = 95,
+    .filter.threshold       = 20,
+    .filter.reset_threshold = 60,
+    .filter.count_limit     = 0,
+    .filter.min             = 50,
+    .filter.step            = 5,
 };
 #endif
 
 #ifdef USE_NTC
 volatile ADCDataTypeDef_t NTC = {
-    .adc_buffer     = &ADC_measures[0].NTC,
-    .filter.filter_normal  = 75,
-    .filter.reset_limit  = 50,
+    .adc_buffer             = &ADC_measures[0].NTC,
+    .filter.coefficient     = 95,
+    .filter.threshold       = 20,
+    .filter.reset_threshold = 60,
+    .filter.count_limit     = 0,
+    .filter.min             = 50,
+    .filter.step            = 5,
 };
 #endif
 
 #ifdef USE_VREF
 volatile ADCDataTypeDef_t VREF = {
-    .adc_buffer     = &ADC_measures[0].VREF
-    .filter.filter_normal  = 75,
-    .filter.reset_limit  = 50,
+    .adc_buffer             = &ADC_measures[0].VREF,
+    .filter.coefficient     = 95,
+    .filter.threshold       = 20,
+    .filter.reset_threshold = 60,
+    .filter.count_limit     = 0,
+    .filter.min             = 50,
+    .filter.step            = 5,
 };
 #endif
 
+
+#ifdef ENABLE_INT_TEMP
+volatile ADCDataTypeDef_t INT_TMP = {
+    .adc_buffer             = &ADC_measures[0].INT_TMP,
+    .filter.coefficient     = 95,
+    .filter.threshold       = 10,
+    .filter.reset_threshold = 30,
+    .filter.count_limit     = 0,
+    .filter.min             = 50,
+    .filter.step            = 5,
+};
+#endif
 static ADC_HandleTypeDef *adc_device;
 
 
@@ -76,7 +100,7 @@ void ADC_Init(ADC_HandleTypeDef *adc){
   adc_device->Init.ExternalTrigConv = ADC_SOFTWARE_START;                                   // Set software trigger
   if (HAL_ADC_Init(adc_device) != HAL_OK) { Error_Handler(); }
 
-  sConfig.SamplingTime = ADC_SAMPLETIME_13CYCLES_5;                                         // More sampling time to compensate high input impedances
+  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES_5;                                         // More sampling time to compensate high input impedances
 
   #ifdef ADC_CH_1ST
     #if defined STM32F101xB || defined STM32F102xB || defined STM32F103xB
@@ -99,6 +123,11 @@ void ADC_Init(ADC_HandleTypeDef *adc){
       sConfig.Rank = ADC_REGULAR_RANK_3;
     #endif
     sConfig.Channel = ADC_CH_3RD;
+
+    #if defined ENABLE_INT_TEMP && !defined ADC_CH_4TH
+    sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;                                      // Last channel is internal temperature, requires min. 10uS sampling time
+    #endif
+
     if (HAL_ADC_ConfigChannel(adc_device, &sConfig) != HAL_OK){Error_Handler();}
   #endif
 
@@ -107,6 +136,24 @@ void ADC_Init(ADC_HandleTypeDef *adc){
     sConfig.Rank = ADC_REGULAR_RANK_4;
   #endif
   sConfig.Channel = ADC_CH_4TH;
+
+  #if defined ENABLE_INT_TEMP && !defined ADC_CH_5TH
+  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
+  #endif
+
+  if (HAL_ADC_ConfigChannel(adc_device, &sConfig) != HAL_OK){Error_Handler();}
+  #endif
+
+  #ifdef ADC_CH_5TH
+  #if defined STM32F101xB || defined STM32F102xB || defined STM32F103xB
+    sConfig.Rank = ADC_REGULAR_RANK_5;
+  #endif
+  sConfig.Channel = ADC_CH_5TH;
+
+  #if defined ENABLE_INT_TEMP && !defined ADC_CH_6TH
+  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
+  #endif
+
   if (HAL_ADC_ConfigChannel(adc_device, &sConfig) != HAL_OK){Error_Handler();}
   #endif
 
@@ -133,6 +180,26 @@ void ADC_Start_DMA(){
   #endif
 
   ADC_Status=ADC_Sampling;
+/*
+ // TEST CODE, DOESN'T WORK!
+#ifdef ENABLE_INT_TEMP
+  static uint8_t sampling_temp=0;
+  static uint32_t last_temp_time=0;
+  uint32_t tmp_sqr1 = 0U;
+
+  if(sampling_temp){                                                                      // If last conversion sampled temperature
+    sampling_temp=0;                                                                      // Disable In Temp channel
+    tmp_sqr1 = ADC_SQR1_L_SHIFT(ADC_Num-1);                                               // Assume Int. temp is last channel, thus matching ADC_Num
+    MODIFY_REG(adc_device->Instance->SQR1, ADC_SQR1_L, tmp_sqr1 );
+  }
+  else if(!last_temp_time || (HAL_GetTick()-last_temp_time)>999){                        // If never sampled or every 10 seconds (It's pretty slow)
+    sampling_temp=1;                                                                      // Enable temp channel
+    last_temp_time=HAL_GetTick();
+    tmp_sqr1 = ADC_SQR1_L_SHIFT(ADC_Num);
+    MODIFY_REG(adc_device->Instance->SQR1, ADC_SQR1_L, tmp_sqr1 );
+  }
+#endif
+*/
   if(HAL_ADC_Start_DMA(adc_device, (uint32_t*)ADC_measures, sizeof(ADC_measures)/ sizeof(uint16_t) )!=HAL_OK){  // Start ADC conversion now
     Error_Handler();
   }
@@ -152,7 +219,7 @@ void DoAverage(volatile ADCDataTypeDef_t* InputData){
   int32_t adc_sum,avg_data;
   uint16_t max=0, min=0xffff;
   volatile filter_t *f = &InputData->filter;
-  uint8_t factor = f->filter_normal;
+  int8_t factor = f->coefficient;
   float k;
 
   #ifdef DEBUG_PWM
@@ -179,42 +246,45 @@ void DoAverage(volatile ADCDataTypeDef_t* InputData){
   avg_data = adc_sum  / (ADC_BFSIZ-2);
   InputData->last_raw = avg_data;
 #ifdef SELECTIVE_FILTERING
-/*
+
 #if defined DEBUG_PWM && defined SWO_PRINT
   extern bool dbg_newData;
 #endif
-  int32_t diff = (int32_t)avg_data - (int32_t)InputData->last_avg;
-  int32_t abs_diff=abs(diff);
 
-  if((abs_diff > f->partial_start) && (abs_diff < (f->partial_end - f->partial_start))){                                 // If within partial limits, smoothen difference
-    float range = f->partial_start - f->partial_end;
-    InputData->EMA_of_Input += ((float)abs_diff * (float)diff) / range;
+  if(factor>0 && factor<100){
+    int32_t diff = avg_data - (int32_t)InputData->last_avg;
+    int32_t abs_diff=abs(diff);
+
+    if(abs_diff > f->reset_threshold){                                         // If diff greater reset_threshold, reset the filter
+      factor = 0;
+      f->counter = 0;
+    }
+    else if(abs_diff > f->threshold){                                         // diff greater than threshold
+      if(f->counter < f->count_limit){                                        // If counter below limit, just increase it, use normal filter coefficient
+        f->counter++;
+      }
+      else{                                                                   // Else,
+        factor = factor + ((f->counter - f->count_limit)*f->step);            // compute new coefficient (Note adding because step is negative)
+        if(factor > f->min){                                                  // if factor greater than limit
+          f->counter++;                                                       // Keep decreasing
+        }
+        else{
+          factor = f->min;                                                    // Else, use min
+        }
+      }
+    }
+    else{                                                                     // Below threshold limit, use normal coefficient
+      f->counter = 0;
+    }
+  }
+
+  if(factor==0 || factor==100){                                             // Factor 100 would use 100% of old value, never updating, so we force 0% if that happens (shouldn't)
+    InputData->EMA_of_Input = avg_data;                                     // Use last average (No filtering)
   }
   else{
-    if(abs_diff > f->partial_end){
-      if(InputData->spike_count < f->spike_limit){
-        InputData->spike_count++;
-        dbg_newData=1;
-      }
-      else{
-        dbg_newData=1;
-        factor=0;
-        InputData->spike_count = 0;
-      }
-    }
-*/
-    if(abs( (int32_t)avg_data - (int32_t)InputData->last_avg) > f->reset_limit){
-      factor=0;
-    }
-
-    if(factor>0 && factor<100){                                                                  // If applicable factor
-        k=((float)factor/100);
-        InputData->EMA_of_Input = (InputData->EMA_of_Input*k) + ((float)avg_data*(1.0-k));
-    }
-    else{                                                                                             // Else, apply last average
-      InputData->EMA_of_Input = avg_data;
-    }
- // }
+    k=((float)factor/100);
+    InputData->EMA_of_Input = (InputData->EMA_of_Input*k) + ((float)avg_data*(1.0-k));
+ }
 #endif
   InputData->last_avg = InputData->EMA_of_Input;
 }
@@ -248,6 +318,9 @@ void handle_ADC_Data(void){
   #ifdef USE_VIN
   DoAverage(&VIN);
   #endif
+  #ifdef ENABLE_INT_TEMP
+  DoAverage(&INT_TMP);
+  #endif
 }
 
 
@@ -273,11 +346,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* _hadc){
     if(systemSettings.settings.WakeInputMode==mode_stand){
       readWake();
     }
+
     __HAL_TIM_SET_COUNTER(Iron.Pwm_Timer,0);                                                // Synchronize PWM
     if(!Iron.Error.safeMode && Iron.CurrentMode!=mode_sleep){
       configurePWMpin(output_PWM);
     }
-    HAL_IWDG_Refresh(&hiwdg);
+
     handle_ADC_Data();
 
 
@@ -293,5 +367,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* _hadc){
 
     handleIron();
     runAwayCheck();
+
+    HAL_IWDG_Refresh(&hiwdg);
   }
 }

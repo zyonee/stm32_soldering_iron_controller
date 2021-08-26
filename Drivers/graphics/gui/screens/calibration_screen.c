@@ -269,6 +269,9 @@ static int Cal_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_State_
     if(input==LongClick || ((current_time-screen_timer)>15000)){
       return screen_main;
     }
+    else if(input==Rotate_Decrement_while_click){
+      return screen_settings;
+    }
   }
   return default_screenProcessInput(scr, input, s);
 }
@@ -321,9 +324,14 @@ static int Cal_Start_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_
   if(input!=Rotate_Nothing){
     screen_timer=current_time;
   }
-  if((current_time-screen_timer)>60000){
+  if((current_time-screen_timer)>180000){   // 3min inactivity
     setCurrentMode(mode_sleep);
     return screen_main;
+  }
+  if(current_state<cal_input_250){
+    if(input==Rotate_Decrement_while_click){
+      return screen_calibration;
+    }
   }
 
   if(tempReady){
@@ -450,6 +458,8 @@ static void Cal_Start_create(screen_t *scr) {
   dis->getData = &getMeasuredTemp;
   edit->setData =  (void (*)(void *)) &setMeasuredTemp;
   edit->selectable.tab = 1;
+  edit->big_step=5;
+  edit->step=1;
   w->posX = 82;
   w->posY = 22;
   w->width = 42;
@@ -476,7 +486,6 @@ static void Cal_Settings_OnExit(screen_t *scr) {
 }
 
 static int Cal_Settings_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_State_t *s) {
-  comboBox_item_t *item = ((comboBox_widget_t*)scr->current_widget->content)->currentItem;
   if(GetIronError()){
     return screen_calibration;
   }
@@ -486,14 +495,21 @@ static int Cal_Settings_ProcessInput(struct screen_t *scr, RE_Rotation_t input, 
   if(input!=Rotate_Nothing){
     screen_timer=current_time;
   }
-  if(item->type==combo_Editable && item->widget->selectable.state==widget_edit){
-    if((current_time-screen_timer)>60000){
-      setCurrentMode(mode_sleep);
-      return screen_main;
-    }
-  }
-  else if((current_time-screen_timer)>15000){
+  if((current_time-screen_timer)>180000){     // 3 min inactivity
+    setCurrentMode(mode_sleep);
     return screen_main;
+  }
+
+  if(input==Rotate_Decrement_while_click){
+   comboBox_item_t *item = ((comboBox_widget_t*)scr->current_widget->content)->currentItem;
+    if(item->type==combo_Editable || item->type==combo_MultiOption){
+      if(item->widget->selectable.state!=widget_edit){
+        return screen_calibration;
+      }
+    }
+    else{
+      return screen_calibration;
+    }
   }
   return default_screenProcessInput(scr, input, s);
 }
@@ -509,7 +525,7 @@ static void Cal_Settings_create(screen_t *scr){
   edit->inputData.reservedChars=4;
   edit->inputData.getData = &getCal250;
   edit->big_step = 100;
-  edit->step = 50;
+  edit->step = 20;
   edit->setData = (void (*)(void *))&setCal250;
   edit->max_value = 4000;
   edit->min_value = 0;
@@ -519,7 +535,7 @@ static void Cal_Settings_create(screen_t *scr){
   edit->inputData.reservedChars=4;
   edit->inputData.getData = &getCal350;
   edit->big_step = 100;
-  edit->step = 50;
+  edit->step = 20;
   edit->setData = (void (*)(void *))&setCal350;
   edit->max_value = 4000;
   edit->min_value = 0;
@@ -529,7 +545,7 @@ static void Cal_Settings_create(screen_t *scr){
   edit->inputData.reservedChars=4;
   edit->inputData.getData = &getCal450;
   edit->big_step = 100;
-  edit->step = 50;
+  edit->step = 20;
   edit->setData = (void (*)(void *))&setCal450;
   edit->max_value = 4000;
   edit->min_value = 0;

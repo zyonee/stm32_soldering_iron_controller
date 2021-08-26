@@ -12,13 +12,15 @@ Select the one appropriate for your iron. (JBC cartidges usually require electri
 
 ## Basic Controls<br>
 Changes are made using the rotary encoder and its push button.<br>
-The power supply voltage is shown upper left, internal temperature in the upper right, bar graph of relative power going to the tip on the bottom.<br>
-While in normal operation, shake sensor activity will be shown briefly in the top center.<br>
-Otherwise, the current mode will be shown (sleep, standby, boost).<br>
+The power supply voltage is shown upper left.<br>
+The internal temperature is on the upper right.<br>
+The current selected tip appears on the bottom left.<br>
+A bar graph of relative power going to the tip is shown on the bottom.<br>
+While in normal operation, shake sensor activity will be shown briefly in the bottom center.<br>
+In normal mode, the setpoint is shown in the upper center, otherwise, the current mode will be shown (sleep, standby, boost).<br>
 To operate the menus, rotate to scroll to the desired selection, quick press to select it, rotate to change.<br>
 Quick press again to stop editing the setting.<br>
-Widgets have fine and coarse adjustment.<br>
-While editing the widget, normal rotation will make fine adjustement. Click and rotate will do coarse adjustment.<br>
+While editing the widget, moderate rotation speed will make fine adjustement, a fast rotation will do coarse adjustment (big steps).<br>
 
 ---
 
@@ -41,7 +43,6 @@ The PID (Proportional, Integral, Derivative) algorithm determines the PWM duty c
 ---
 
 ## Main screen<br>
-
   - **Temperature display modes**<br>
   While in run mode, a single click will switch between numeric and graph.<br>
   If the current mode is sleep/standby/boost, clicking will set run mode instead (If button wake is enabled).<br>
@@ -55,11 +56,14 @@ The PID (Proportional, Integral, Derivative) algorithm determines the PWM duty c
   You can manually enter lower power modes by clicking and rotating counter-clockwise.<br>
   The sequence would be [run/boost mode]->[standby mode]->[sleep mode].<br>
   If button wake is enabled, any encoder activity will resume normal mode. Othwerwise only the display brightness will be restored.<br>
-  To wake up you can make a click (If button wake is enabled) or move the handle (If shake wake is enabled or in stand mode).<br>
+  To wake up you can make a click (If button wake is enabled) or move the handle (If shake wake is enabled or in stand mode).<br>  
+- **Boost mode**<br>
+  Rotate the encoder to show up the setpoint adjustment and click within 1 second to trigger boost mode.<br>
+  Clicking or rotating the encoder will return to normal mode.<br>
 - **Tip selection**<br>
-  Click and rotate clockwise to show the tip selection.
-  Click again to return, long-click enter the tip settings menu.<br>
-  In any case, it will return to normal mode after 5 seconds of inactivity.<br>
+  Click and rotate clockwise to show the tip selection. The bottom left corner will be highlighted.<br>
+  Rotate to change the selected tip, click again to return, or long-click enter the tip settings.<br>
+  It will return to normal mode after 5 seconds of inactivity.<br>
 - **System menu**<br>
   A long click will enter the system menu (Except while in tip selection/setpoint adjustment).<br>
 
@@ -68,22 +72,22 @@ The PID (Proportional, Integral, Derivative) algorithm determines the PWM duty c
 ## System menu<br>
 Most screens will return to main screen after 15 seconds of inactivity.<br>
 Long-clicking will have the same effect.<br>
+In most menus, rotate anti-clockwise while pushing the button to quickly return to previous screen.<br>
 
 ### IRON
-
 Iron settings control the operation of the handle/tips. <br>
-  - **Max temp**<br>
+  - **Max temperature**<br>
 Upper adjustable temperature limit.<br>
-  - **Min temp**<br>
+  - **Min temperature**<br>
 Lower adjustable temperature limit.<br>
   - **Boost time**<br>
 Boost mode run time before resuming normal mode.<br>
-  - **Boost temp**<br>
+  - **Boost temperature**<br>
 Temperature offset applied in boost mode. It's added to the current temperature and limited to system maximum temperature.<br>
   - **Standby time**<br>
 If there is no soldering activity for this period, the controller will reduce the temperature to extend the tip life and reduce power waste.<br>
 Setting this option to 0 will disable standby mode, the station will switch to sleep state.<br>
-  - **Standby temp**<br>
+  - **Standby temperature**<br>
 Temperature applied in standby mode.<br>
   - **Sleep time**<br>
 If there is no soldering activity for this period, the controller will "sleep" and stop providing power to the tip.<br>
@@ -93,7 +97,7 @@ This timer cannot be disabled.<br>
 The maximum power which will be delivered to the tip.<br>
 The limit is done by adjusting the maximum PWM duty cycle based on the power supply voltage and the heater resistance.<br>
   - **Heater (resistance)**<br>
-The resistance of the tip's heating element in ohms. There is normally no need to change this from the default.<br>
+The resistance of the tip's heating element in ohms, used for the power limitation. There is normally no need to change this from the default.<br>
   - **ADC Time**<br>
 Sets the ADC reading period. The controller stops disables the PWM and runs the ADC. Default 200 ms.<br>
 It also sets the base PWM frequency. The PWM multiplier uses this base.<br>
@@ -111,18 +115,34 @@ PWM     |___|   |___|   |_____________________|   |___|   |___
   - **PWM multiplier**<br>
 Sets the PWM period, using the formula ADC Time/multiplier.<br>
 Default: x1.<br>
-  - **Filter**<br>
-Adjust the filtering factor applied to the temperature measurements before they are passed to the PID.<br>
-The value adjust the EMA (Exponential Moving Average) coefficient.<br>
-This helps remove noise and provides more stability, but too high values will slow down the filter response and cause oscillation.<br>
   - **No iron**<br>
 Sets the ADC reading threshold that detects when no iron is present.<br>
 Usually when no iron is plugged in, the measured temperature will read at or close to maximum ADC range(4095).<br>
 Values >4095 will disable "no iron" detection.<br>
-Default 4000, max 4100.<br>
+Default 4000, max 4096.<br>
   - **No iron delay**<br>
-Time in miliSeconds that an iron must be plugged in before it is considered present.<br>
+Time in milliseconds that an iron must be plugged in before it is considered present.<br>
 If the screen bounces between run mode and no iron, increase this value.<br>
+  - **FILTER SETTINGS**<br>
+Here you can adjust the different the filtering settings.<br>
+The firmware uses Exponential Moving Average (EMA) to filter the noise from the ADC readings.<br>
+Keep in mind that wrong settings will cause a lot of trouble, PID is heavily affected by the signal noise.<br>
+    - **Filter**<br>
+Coefficient normally applied. The filtering will be heavier as the value increases.<br>
+     - **Threshold**<br>
+Defines the limit in the amplitude of the changes from the last average. Exceeding this will increase the threshold counter, while resetting it if under the limit.<br>
+     - **Count limit**<br>
+If the threshold detection counter becomes greater than this limit, the coefficient will start to be throttled down to improve response.<br>  
+     - **Step down**<br>
+This is the value that will be subtracted to the coefficient each time after the threshold counter was exceeded.<br>
+Every new reading exceeding the threshold will subtract this value in an acumulative way, until reaching the min value if the condition doesn't stabilize.<br>
+     - **Min**<br>
+This is the minimum filtering coefficient that the system will be allowed to use.
+    - **Reset limit**<br>
+Exceeding this limit will instantly reset the filter and use the current reading.<br>
+This is used for huge differences, usually when the tip is removed or plugged in, to allow instant response from the system.<br>
+    - **Back**<br>
+Return to iron menu.<br>
   - **Back**<br>
 Return to system menu.<br>
 
@@ -136,6 +156,7 @@ Sets which iron profile (__T12__, __C210__, __C245__) to use.<br>
 Screen Contrast/brightness.<br>
   - **Auto dim**<br>
 Fade the display after 10s in sleep or error modes to prevent display burning.<br>
+For safety reasons,the screen will only dim when the iron temperature is below 100°C.<br>
   - **Offset**<br>
 Screen offset. This can accomodate the different screens which the controllers have come with. Use it to center the display on the screen.<br>
   - **Wake mode**<br>
@@ -144,10 +165,10 @@ SHAKE uses a motion sensor present in T12 handles, shake or hold the handle tip 
 STAND uses the same input, but disconnected from the handle. Must be shorted to gnd when the handle is in the stand.<br>
 (Stand mode operation operation: Shorted to gnd = sleep/standby, open = run ).<br>
   - **Stand mode**<br>
-Sets the mode that will be applied when the handle is put in the stand (sleep / standby).<br>
+Sets the mode that will be applied when the handle is put in the stand (__STANDBY__ or __SLEEP__).<br>
 This option is disabled in shake mode.<br>
   - **Boot**<br>
-Operation mode when powered on. __RUN__ or __SLEEP__.<br>
+Operation mode when powered on (__RUN__, __STANDBY__ or __SLEEP__).<br>
 This option is disabled in stand mode.<br>
   - **Button Wake**<br>
 Selects what modes can be waken with encoder activity.<br>
@@ -170,6 +191,8 @@ Use iron active detection by leaving the PWM slightly on all the time. If your a
 Temperature scale. Celsius or Fahrenheit<br>
   - **Step**<br>
 Temperature step when adjusting tip temperature.<br>
+ - **Big Step**<br>
+Temperature Big step when adjusting tip temperature, click and rotate to activate big step in temperature screen<br>
   - **LVP**<br>
 Adjust Low voltage protection.<br>
   - **GUI Time**<br>
@@ -179,6 +202,8 @@ If the display readings were updated at the same speed, it would be impossible t
 This setting defines the time in mS where the main screen readings are updated (voltage, temperatures).<br>
 The effective update rate will be limited by the ADC read frequency.<br> 
 Use a higher setting for less "flickery" display (more steady values).<br>
+  - **DEBUG**<br>
+Enable debugging menu.<br>
   - **RESET MENU**<br>
 Reset various configuration sections:<br>
     - **Settings**<br>
@@ -194,8 +219,17 @@ Adjust NTC settings:<br>
     - **Pull mode**<br>
 Adjust as your circuit: Pull up or pull down.<br>
     - **Pull resistance**<br>
-    - **NTC resistance**<br>
-    - **NTC beta**<br>
+    - **NTC Detect** : Enables or disables automatic switching between 2 NTC values (typically 10K and 100K).<br>
+        
+    	OFF: Fixed NTC values:<br>
+        - **NTC resistance**<br>
+      	- **NTC beta coefficient**<br>
+      	
+    	ON: Two NTC values:<br>
+      	- **Higher NTC value**<br>
+      	- **Higher NTC Beta**<br>
+      	- **Lower NTC value**<br>
+      	- **Lower NTC Beta**<br>
   - **SW:**<br>
 Displays the current software version. Actually, it's the build date.<br>
   - **HW:**<br>
@@ -209,12 +243,13 @@ Return to system menu.<br>
 Different tips may have different characteristics. Tips may be added or edited here.<br>
 Select a tip to enter tip settings edit screen, or select Add New to create a new tip.<br>
 The new tip will be created by copying the PID/calibration settings from the first in the system.<br>
+Each profile (T12, C245, C210) can store up to 20 tips.<br>
 
 ### EDIT TIP SETTINGS
 This menu allows Tip name editing, copying, deleting, PID tuning and adjustment of stored tip calibration values.<br>
-PID tuning is an advanced topic, _**incorrect settings here can result in instability and damage to tips and possibly the controller**_.<br>
-Most users should not change these settings, but here are the basics. Kp, Ki, Kd, Imax, Imin are the coefficients which control the PID's behavior.<br>
-Calibration values are not meant for manual adjustment. Only to restore a previous calibration result.<br>
+PID tuning is an advanced topic, _**incorrect settings here can result in instability and erratic response**_.<br>
+Kp, Ki, Kd, Imax, Imin are the coefficients which control the PID's behavior.<br>
+Calibration values are not meant for doing manual calibrations, only to restore a previous calibration result.<br>
 Use calibration for optimal results.<br>
   - **TIP NAME**<br>
 Shows the tip name, click on it to edit the name.<br>
@@ -227,7 +262,7 @@ PID differential term, changes the duty cycle based on how fast the measured tem
   - **PID Imax**<br>
 The integral accumulator higher limit.<br>
   - **PID Imin**<br>
-The integral accumulator lower limit.<br>
+The integral accumulator lower limit. As the system can't do anything to actively cool down the tip, it's usually set to 0.<br>
   - **Cal250**<br>
 The stored value for 250ºC calibration.<br>
   - **Cal350**<br>
@@ -266,14 +301,26 @@ Return to system menu.<br>
 
 ---
 
-### PID DEBUG
-This is a menu to help debugging the PID.<br>
-The 3 plots are:<br>
-- PID current proportional value.<br>
-- PID current integral value.<br>
-- PID current derivative value.<br>
+### DEBUG (if enabled)
+This is a menu to help debugging the controller, showing real-time readings.<br>
+Clicking will switch between general and PID debug screens.<br>
+Long-click will return to main screen.<br>
 
-A click or long-click will exit this screen.<br>
+General debugging screen shows the following:
+ - P, I, D (Current PID output)
+ - Current temperature reading
+ - Current setpoint (adjustable)
+ - AVG (Iron temperature, filtered)
+ - RAW (Iron temperature, unfiltered)
+ - SET (Setpoint, converted to ADC value)
+ - ERR (PID Error, difference between setpoint and average)
+ - PWM (PWM duty value)
+ - PWR (Power in %)
+
+PID debugging screens shows 3 plots, representing:
+ - P (Proportional)
+ - I (Integral)
+ - D (Derivative)
 
 ---
 
@@ -287,9 +334,10 @@ For non critical errors, a warning will be shown: iron not detected, supply volt
   - **Iron runaway**<br>
 If by any means the iron temperature is higher than requested and the system is still powering the tip, it will trigger a timer depending on the temperature diference.<br>
 The condition must dissapear within the specified time, otherwise it will trigger a critical runaway error, shutting down the power stage.<br>
-This is very useful to protect the tip from wrong PID adjustemnts (Ex. excessive Imax values).<br>
+This is very useful to protect the tip from wrong PID adjustments (Ex. excessive Integral values).<br>
   - **Internal function errors**<br>
 If any internal function detects an undefined or not expected state, it will lock the station and show a message trying to show where the error happened (File, line).<br>
+If this happens open a git hub ticket or a message in eevblog forum with the details.<br>
   - **Hardware exceptions**<br>
 If a hardware exception happens, the station will lock up and display an error message about the exception.<br>
   - **Data error detection**<br>
@@ -301,9 +349,9 @@ Also, the flash storage is checked carefully before and after writes, any issue 
   
  ### HARD RESET
 If for any reason the station is unable to boot, you can't access the reset menu or you want to wipe everything up quickly, there's a hard reset method.<br>
-Power the station off, push and hold the endcoder button, and then power the station on.<br>
+Power the station off, push and hold the encoder button, and turn on the power.<br>
 A message will appear in the screen. "Hold button to restore defaults".<br>
-Keep pressing the button for another 5 seconds, until the next message appears, "Release button now".
+Keep pressing the button for another 5 seconds, until the next message appears, "Release button now".<br>
 Release the button, the station will wipe everything and reboot.<br>
 
 If you accidentally pushed the button, just release it before the 5 second timeout to resume the boot process. 
