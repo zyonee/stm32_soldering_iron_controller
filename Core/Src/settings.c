@@ -285,6 +285,7 @@ void resetSystemSettings(void) {
   systemSettings.settings.StandMode         = mode_sleep;
   systemSettings.settings.EncoderMode       = RE_Mode_One;
   systemSettings.settings.debugEnabled      = disable;
+  systemSettings.settings.language          = lang_english;
   systemSettings.settings.NotInitialized    = initialized;
 
   #ifdef USE_NTC
@@ -326,9 +327,8 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.Kp          = 7500;           // val = /1.000.000
       systemSettings.Profile.tip[x].PID.Ki          = 4800;           // val = /1.000.000
       systemSettings.Profile.tip[x].PID.Kd          = 1200;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.maxI        = 70;             // val = /100
+      systemSettings.Profile.tip[x].PID.maxI        = 85;             // val = /100
       systemSettings.Profile.tip[x].PID.minI        = 0;              // val = /100
-      systemSettings.Profile.tip[x].PID.tau         = 20;             // val = /100
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);         // Empty name
     }
     strcpy(systemSettings.Profile.tip[0].name, "BC3 ");               // Put some generic name
@@ -352,9 +352,8 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.Kp          = 1800;
       systemSettings.Profile.tip[x].PID.Ki          = 500;
       systemSettings.Profile.tip[x].PID.Kd          = 200;
-      systemSettings.Profile.tip[x].PID.maxI        = 10;
+      systemSettings.Profile.tip[x].PID.maxI        = 85;
       systemSettings.Profile.tip[x].PID.minI        = 0;
-      systemSettings.Profile.tip[x].PID.tau         = 20;             // val = /100
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);
     }
     strcpy(systemSettings.Profile.tip[0].name, "C245");
@@ -377,9 +376,8 @@ void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.Kp          = 1800;
       systemSettings.Profile.tip[x].PID.Ki          = 500;
       systemSettings.Profile.tip[x].PID.Kd          = 200;
-      systemSettings.Profile.tip[x].PID.maxI        = 10;
+      systemSettings.Profile.tip[x].PID.maxI        = 85;
       systemSettings.Profile.tip[x].PID.minI        = 0;
-      systemSettings.Profile.tip[x].PID.tau         = 20;             // val = /100
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);
     }
     strcpy(systemSettings.Profile.tip[0].name, "C210");
@@ -396,12 +394,12 @@ void resetCurrentProfile(void){
     Error_Handler();  // We shouldn't get here!
   }
 
-  systemSettings.Profile.tipFilter.coefficient      = 95;   // % of old data (more %, more filtering)
-  systemSettings.Profile.tipFilter.threshold        = 40;
-  systemSettings.Profile.tipFilter.min              = 60;   // Don't go below xxx % when decreasing after exceeding threshold limits
+  systemSettings.Profile.tipFilter.coefficient      = 90;   // % of old data (more %, more filtering)
+  systemSettings.Profile.tipFilter.threshold        = 50;
+  systemSettings.Profile.tipFilter.min              = 65;   // Don't go below x% when decreasing after exceeding threshold limits
   systemSettings.Profile.tipFilter.count_limit      = 0;
   systemSettings.Profile.tipFilter.step             = -3;   // -5% less everytime the reading diff exceeds threshold_limit and the counter is greater than count_limit
-  systemSettings.Profile.tipFilter.reset_threshold  = 800;  // Any diff over 500 reset the filter (Tip removed or connected)
+  systemSettings.Profile.tipFilter.reset_threshold  = 600;  // Any diff over 500 reset the filter (Tip removed or connected)
 
 
   systemSettings.Profile.CalNTC                   = 25;
@@ -538,10 +536,10 @@ void ErrCountDown(uint8_t Start,uint8_t  xpos, uint8_t ypos){
   while(Start){
     timErr=HAL_GetTick();
     u8g2_SetDrawColor(&u8g2, BLACK);
-    u8g2_DrawBox(&u8g2,xpos,ypos,u8g2_GetStrWidth(&u8g2,str),u8g2_GetMaxCharHeight(&u8g2));
+    u8g2_DrawBox(&u8g2,xpos,ypos,u8g2_GetUTF8Width(&u8g2,str),u8g2_GetMaxCharHeight(&u8g2));
     u8g2_SetDrawColor(&u8g2, WHITE);
     sprintf(&str[0],"%*u",length-1,Start);
-    u8g2_DrawStr(&u8g2,xpos,ypos,str);
+    u8g2_DrawUTF8(&u8g2,xpos,ypos,str);
     update_display();
     while( (HAL_GetTick()-timErr)<999 ){
       HAL_IWDG_Refresh(&hiwdg);

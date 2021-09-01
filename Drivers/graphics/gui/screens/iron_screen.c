@@ -16,6 +16,7 @@ static editable_widget_t *editable_IRON_StandbyTemp;
 static editable_widget_t *editable_IRON_BoostTemp;
 static editable_widget_t *editable_IRON_MaxTemp;
 static editable_widget_t *editable_IRON_MinTemp;
+static editable_widget_t *editable_IRON_UserTemp;
 
 filter_t bak_f;
 
@@ -123,6 +124,20 @@ static void * getStandbyTemp() {
   return &temp;
 }
 //=========================================================
+static void setUserTemp(uint32_t *val) {
+  if(*val > systemSettings.Profile.MaxSetTemperature){
+    *val = systemSettings.Profile.MaxSetTemperature;
+  }
+  else if(*val < systemSettings.Profile.MinSetTemperature){
+    *val = systemSettings.Profile.MinSetTemperature;
+  }
+  systemSettings.Profile.UserSetTemperature = *val;
+}
+static void * getUserTemp() {
+  temp = systemSettings.Profile.UserSetTemperature;
+  return &temp;
+}
+//=========================================================
 static void * _getPwmMul() {
   temp=systemSettings.Profile.pwmMul;
   return &temp;
@@ -226,12 +241,14 @@ static void iron_onEnter(screen_t *scr){
     editable_IRON_MinTemp->inputData.endString="\260F";
     editable_IRON_StandbyTemp->inputData.endString="\260F";
     editable_IRON_BoostTemp->inputData.endString="\260F";
+    editable_IRON_UserTemp->inputData.endString="\260F";
   }
   else{
     editable_IRON_MaxTemp->inputData.endString="\260C";
     editable_IRON_MinTemp->inputData.endString="\260C";
     editable_IRON_StandbyTemp->inputData.endString="\260C";
     editable_IRON_BoostTemp->inputData.endString="\260C";
+    editable_IRON_UserTemp->inputData.endString="\260C";
   }
   if(scr==&Screen_settings){
     bak_f = systemSettings.Profile.tipFilter;
@@ -251,13 +268,16 @@ static void iron_create(screen_t *scr){
   displayOnly_widget_t* dis;
   editable_widget_t* edit;
 
+  update_language();
+
   //  [ IRON COMBO ]
   //
   newWidget(&w,widget_combo, scr);
+  ((comboBox_widget_t*)w->content)->font = font_menu;
 
   //  [ Max Temp Widget ]
   //
-  newComboEditable(w, "Max temp", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_Max_Temp, &edit, NULL);
   editable_IRON_MaxTemp=edit;
   dis=&edit->inputData;
   dis->reservedChars=5;
@@ -267,10 +287,9 @@ static void iron_create(screen_t *scr){
   edit->max_value = 480;
   edit->setData = (void (*)(void *))&setMaxTemp;
 
-
   //  [ Min Temp Widget ]
   //
-  newComboEditable(w, "Min temp", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_Min_Temp, &edit, NULL);
   editable_IRON_MinTemp=edit;
   dis=&edit->inputData;
   dis->reservedChars=5;
@@ -281,9 +300,20 @@ static void iron_create(screen_t *scr){
   edit->min_value = 50;
   edit->setData = (void (*)(void *))&setMinTemp;
 
+  //  [ user Temp Widget ]
+  //
+  newComboEditable(w, strings[lang].IRON_User_Temp, &edit, NULL);
+  editable_IRON_UserTemp=edit;
+  dis=&edit->inputData;
+  dis->reservedChars=5;
+  dis->getData = &getUserTemp;
+  edit->big_step = 10;
+  edit->step = 5;
+  edit->setData = (void (*)(void *))&setUserTemp;
+
   //  [ Stby Time Widget ]
   //
-  newComboEditable(w, "Standby", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_Standby, &edit, NULL);
   dis=&edit->inputData;
   dis->endString="min";
   dis->reservedChars=5;
@@ -295,7 +325,7 @@ static void iron_create(screen_t *scr){
 
   //  [ Stby Temp Widget ]
   //
-  newComboEditable(w, " Temp", &edit, NULL);
+  newComboEditable(w, strings[lang].__Temp, &edit, NULL);
   editable_IRON_StandbyTemp = edit;
   dis=&edit->inputData;
   dis->reservedChars=5;
@@ -308,7 +338,7 @@ static void iron_create(screen_t *scr){
 
   //  [ Sleep Time Widget ]
   //
-  newComboEditable(w, "Sleep", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_Sleep, &edit, NULL);
   dis=&edit->inputData;
   dis->endString="min";
   dis->reservedChars=5;
@@ -321,7 +351,7 @@ static void iron_create(screen_t *scr){
 
   //  [ Boost Time Widget ]
   //
-  newComboEditable(w, "Boost", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_Boost, &edit, NULL);
   dis=&edit->inputData;
   dis->endString="s";
   dis->reservedChars=5;
@@ -334,7 +364,7 @@ static void iron_create(screen_t *scr){
 
   //  [ Boost Temp Widget ]
   //
-  newComboEditable(w, " Add", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_Boost_Add, &edit, NULL);
   editable_IRON_BoostTemp = edit;
   dis=&edit->inputData;
   dis->reservedChars=5;
@@ -348,7 +378,7 @@ static void iron_create(screen_t *scr){
   #ifdef USE_VIN
   //  [ Power Widget ]
   //
-  newComboEditable(w, "Power", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_Power, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=4;
   dis->endString="W";
@@ -361,7 +391,7 @@ static void iron_create(screen_t *scr){
 
   //  [ Impedance Widget ]
   //
-  newComboEditable(w, "Heater", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_Heater, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=5;
   dis->number_of_dec=1;
@@ -376,7 +406,7 @@ static void iron_create(screen_t *scr){
 
   //  [ Read Period Widget ]
   //
-  newComboEditable(w, "ADC time", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_ADC_Time, &edit, NULL);
   dis=&edit->inputData;
   dis->endString="ms";
   dis->reservedChars=7;
@@ -390,7 +420,7 @@ static void iron_create(screen_t *scr){
 
   //  [ Read Delay Widget ]
   //
-  newComboEditable(w, " Delay", &edit, NULL);
+  newComboEditable(w, strings[lang].__Delay, &edit, NULL);
   dis=&edit->inputData;
   dis->endString="ms";
   dis->reservedChars=7;
@@ -404,7 +434,7 @@ static void iron_create(screen_t *scr){
 
   //  [ PWM Mult Widget ]
   //
-  newComboEditable(w, "PWM mult.", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_PWM_mul, &edit, NULL);
   dis=&edit->inputData;
   dis->endString="x";
   dis->reservedChars=7;
@@ -418,7 +448,7 @@ static void iron_create(screen_t *scr){
 
   //  [ ADC Limit Widget ]
   //
-  newComboEditable(w, "No iron", &edit, NULL);
+  newComboEditable(w, strings[lang].IRON_No_Iron, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=4;
   dis->getData = &getNoIronADC;
@@ -430,7 +460,7 @@ static void iron_create(screen_t *scr){
 
   //  [ No Iron Delay Widget ]
   //
-  newComboEditable(w, " Delay", &edit, NULL);
+  newComboEditable(w, strings[lang].__Delay, &edit, NULL);
   dis=&edit->inputData;
   dis->endString="ms";
   dis->reservedChars=6;
@@ -443,8 +473,8 @@ static void iron_create(screen_t *scr){
 
   //  [ BACK button ]
   //
-  newComboScreen(w, "FILTER SETTINGS", screen_advFilter, &comboItem_advFilter);
-  newComboScreen(w, "BACK", screen_settings, NULL);
+  newComboScreen(w, strings[lang].IRON_Filter_Settings, screen_advFilter, &comboItem_advFilter);
+  newComboScreen(w, strings[lang]._BACK, screen_settings, NULL);
 }
 
 static void iron_advFilter_onEnter(screen_t *scr){
@@ -455,13 +485,16 @@ static void iron_advFilter_create(screen_t *scr){
   displayOnly_widget_t *dis;
   editable_widget_t *edit;
 
+  update_language();
+
   //  [ IRON COMBO ]
   //
   newWidget(&w,widget_combo, scr);
+  ((comboBox_widget_t*)w->content)->font = font_menu;
 
   //  [ Low noise filter Widget ]
   //
-  newComboEditable(w, "Filter", &edit, NULL);
+  newComboEditable(w, strings[lang].FILTER_Filter, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=4;
   dis->getData = &get_filter;
@@ -474,7 +507,7 @@ static void iron_advFilter_create(screen_t *scr){
 
   //  [ Threshold Widget ]
   //
-  newComboEditable(w, " Threshold", &edit, NULL);
+  newComboEditable(w, strings[lang].FILTER__Threshold, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=3;
   dis->getData = &get_threshold;
@@ -486,7 +519,7 @@ static void iron_advFilter_create(screen_t *scr){
 
   //  [ Count limit widget]
   //
-  newComboEditable(w, " Count limit", &edit, NULL);
+  newComboEditable(w, strings[lang].FILTER__Count_limit, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=3;
   dis->getData = &get_count_limit;
@@ -498,7 +531,7 @@ static void iron_advFilter_create(screen_t *scr){
 
   //  [ Filter down steppping Widget ]
   //
-  newComboEditable(w, " Step down", &edit, NULL);
+  newComboEditable(w, strings[lang].FILTER__Step_down, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=4;
   dis->getData = &get_limit_step;
@@ -511,7 +544,7 @@ static void iron_advFilter_create(screen_t *scr){
 
   //  [ Min Filtering Widget ]
   //
-  newComboEditable(w, " Min", &edit, NULL);
+  newComboEditable(w, strings[lang].FILTER__Min, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=4;
   dis->getData = &get_min_filter;
@@ -524,7 +557,7 @@ static void iron_advFilter_create(screen_t *scr){
 
   //  [ Reset threshold Widget ]
   //
-  newComboEditable(w, "Reset limit", &edit, NULL);
+  newComboEditable(w, strings[lang].FILTER_Reset_limit, &edit, NULL);
   dis=&edit->inputData;
   dis->reservedChars=4;
   dis->getData = &get_reset_threshold;
@@ -536,7 +569,7 @@ static void iron_advFilter_create(screen_t *scr){
 
 
 
-  newComboScreen(w, "BACK", screen_iron, NULL);
+  newComboScreen(w, strings[lang]._BACK, screen_iron, NULL);
 
 }
 

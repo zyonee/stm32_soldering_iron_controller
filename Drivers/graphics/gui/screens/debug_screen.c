@@ -223,15 +223,15 @@ void debug_Draw(screen_t *scr){
   if(scr->refresh==screen_Erased){
     u8g2_SetFont(&u8g2, u8g2_font_small);
     u8g2_SetDrawColor(&u8g2, WHITE);
-    u8g2_DrawStr(&u8g2, 0, 0, "P");
-    u8g2_DrawStr(&u8g2, 0, 11, "I");
-    u8g2_DrawStr(&u8g2, 0, 22, "D");
-    u8g2_DrawStr(&u8g2, 64, 0, "AVG");
-    u8g2_DrawStr(&u8g2, 64, 11, "RAW");
-    u8g2_DrawStr(&u8g2, 64, 22, "SET");
-    u8g2_DrawStr(&u8g2, 64, 33, "ERR");
-    u8g2_DrawStr(&u8g2, 64, 44, "PWM");
-    u8g2_DrawStr(&u8g2, 64, 55, "PWR");
+    u8g2_DrawUTF8(&u8g2, 0, 0, "P");
+    u8g2_DrawUTF8(&u8g2, 0, 11, "I");
+    u8g2_DrawUTF8(&u8g2, 0, 22, "D");
+    u8g2_DrawUTF8(&u8g2, 64, 0, "AVG");
+    u8g2_DrawUTF8(&u8g2, 64, 11, "RAW");
+    u8g2_DrawUTF8(&u8g2, 64, 22, "SET");
+    u8g2_DrawUTF8(&u8g2, 64, 33, "ERR");
+    u8g2_DrawUTF8(&u8g2, 64, 44, "PWM");
+    u8g2_DrawUTF8(&u8g2, 64, 55, "PWR");
   }
 
   default_screenDraw(scr);
@@ -243,19 +243,23 @@ static void debug_onEnter(screen_t *scr){
   displayOnly_widget_t *dis = extractDisplayPartFromWidget(widget_Temp);
 
   if(systemSettings.settings.tempUnit==mode_Celsius){
-    edit->max_value = 450;
-    edit->min_value = 50;
-    edit->big_step = 20;
-    edit->step = 5;
-    edit->inputData.endString="\260C";
+    if(scr==&Screen_pid_debug){
+      edit->max_value = 450;
+      edit->min_value = 50;
+      edit->big_step = 20;
+      edit->step = 5;
+      edit->inputData.endString="\260C";
+    }
     dis->endString="\260C";
   }
   else{
-    edit->max_value = 850;
-    edit->min_value = 120;
-    edit->big_step = 50;
-    edit->step = 10;
-    edit->inputData.endString="\260F";
+    if(scr==&Screen_pid_debug){
+      edit->max_value = 850;
+      edit->min_value = 120;
+      edit->big_step = 50;
+      edit->step = 10;
+      edit->inputData.endString="\260F";
+    }
     dis->endString="\260F";
   }
 
@@ -316,7 +320,7 @@ static void debug_create(screen_t *scr){
   dis->font=u8g2_font_small;
   w->posX= 12;
   w->posY= 0;
-  w->width=30;
+  w->width=34;
 
   //  [ PID I Widget ]
   //
@@ -329,7 +333,7 @@ static void debug_create(screen_t *scr){
   dis->font=u8g2_font_small;
   w->posX= 12;
   w->posY= 11;
-  w->width=30;
+  w->width=34;
 
   //  [ PID D Widget ]
   //
@@ -342,7 +346,7 @@ static void debug_create(screen_t *scr){
   dis->font=u8g2_font_small;
   w->posX= 12;
   w->posY= 22;
-  w->width=30;
+  w->width=34;
 
   //  [ Current temp Widget ]
   //
@@ -354,7 +358,7 @@ static void debug_create(screen_t *scr){
   dis->reservedChars=5;
   dis->font=u8g2_font_small;
   w->posX= 10;
-  w->posY= 36;
+  w->posY= 35;
   w->width=30;
 
   //  [ Setpoint adjust Widget ]
@@ -455,6 +459,19 @@ static void pid_debug_create(screen_t *scr){
   widget_t *w;
   displayOnly_widget_t* dis;
 
+  //  [ Current temp Widget ]
+  //
+  newWidget(&w, widget_display,scr);
+  widget_Temp = w;
+  dis=extractDisplayPartFromWidget(w);
+  dis->textAlign=align_right;
+  dis->getData = &getTemp;
+  dis->reservedChars=5;
+  dis->font=u8g2_font_small;
+  w->posX= 0;
+  w->posY= 0;
+  w->width=32;
+
   //  [ PID P Widget ]
   //
   newWidget(&w, widget_display,scr);
@@ -464,8 +481,8 @@ static void pid_debug_create(screen_t *scr){
   dis->reservedChars=6;
   dis->number_of_dec=3;
   dis->font=u8g2_font_small;
-  w->posY= 7;
-  w->width=30;
+  w->posY= 13;
+  w->width=32;
 
   //  [ PID I Widget ]
   //
@@ -476,8 +493,8 @@ static void pid_debug_create(screen_t *scr){
   dis->reservedChars=6;
   dis->number_of_dec=3;
   dis->font=u8g2_font_small;
-  w->posY= 30;
-  w->width=30;
+  w->posY= 28;
+  w->width=32;
 
   //  [ PID D Widget ]
   //
@@ -488,8 +505,8 @@ static void pid_debug_create(screen_t *scr){
   dis->reservedChars=6;
   dis->number_of_dec=3;
   dis->font=u8g2_font_small;
-  w->posY= 51;
-  w->width=30;
+  w->posY= 48;
+  w->width=32;
 }
 
 static void pid_debug_Draw(screen_t * scr){
@@ -535,6 +552,7 @@ void debug_screen_setup(screen_t *scr) {
   sc=&Screen_pid_debug;
   oled_addScreen(sc, screen_pid_debug);
   sc->processInput=&debug_ProcessInput;
+  sc->onEnter = &debug_onEnter;
   sc->create=&pid_debug_create;
   sc->draw=&pid_debug_Draw;
   sc->onExit = &debug_onExit;

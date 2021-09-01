@@ -7,8 +7,11 @@
 #include "screen_common.h"
 
 int32_t temp, temp2, temp3, dimTimer;
-uint8_t status, profile, Selected_Tip;
+uint8_t status, profile, Selected_Tip,lang;
 int8_t dimStep;
+
+const uint8_t * font_small;
+const uint8_t * font_menu;
 
 char *tipName;
 bool disableTipCopy;
@@ -121,7 +124,7 @@ void handleOledDim(void){
   uint8_t contrast=getContrast();
   if(dimStep==0){
     // Wake up screen.
-    if(systemSettings.settings.screenDimming &&  ((current_time-dimTimer)>=((uint32_t)systemSettings.settings.screenDimming*1000))){
+    if(systemSettings.settings.screenDimming && contrast>5 && ((current_time-dimTimer)>=((uint32_t)systemSettings.settings.screenDimming*1000))){
       dimStep=-5;
     }
   }
@@ -137,8 +140,24 @@ void handleOledDim(void){
       if(dimStep>0){
         restore_contrast();
       }
+      else{
+        setContrast(1);
+      }
       dimTimer = current_time;
       dimStep=0;
     }
+  }
+}
+
+
+void update_language(void){
+  lang = systemSettings.settings.language;
+  if(lang==lang_russian){
+    font_menu = u8g2_font_8x13_t_cyrillic;
+    font_small = u8g2_font_6x13_t_cyrillic;
+  }
+  else{
+    font_menu = default_font;
+    font_small = u8g2_font_small;
   }
 }

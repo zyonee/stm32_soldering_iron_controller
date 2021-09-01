@@ -33,9 +33,10 @@
 
 #endif
 
+#define LANGUAGE_COUNT    2
 //#define SWSTRING        "SW: v1.10"                               // For releases
-#define SWSTRING          "SW: 2021-08-25"                          // For git
-#define SETTINGS_VERSION  10                                         // Change this if you change the struct below to prevent people getting out of sync
+#define SWSTRING          "SW: 2021-08-31"                          // For git
+#define SETTINGS_VERSION  11                                         // Change this if you change the struct below to prevent people getting out of sync
 #define StoreSize         2                                         // In KB
 #define FLASH_ADDR        (0x8000000 + ((FLASH_SZ-StoreSize)*1024)) // Last 2KB flash (Minimum erase size, page size=2KB)
 
@@ -102,6 +103,9 @@ enum{
   output_PWM,
   output_Low,
   output_High,
+
+  lang_english             = 0,
+  lang_russian             = 1,
 };
 
 
@@ -153,6 +157,7 @@ typedef struct{
 
 typedef struct{
   uint8_t       NotInitialized;                                     // Always 1 if flash is erased
+  uint8_t       language;
   uint8_t       contrast;
   uint8_t       OledOffset;
   uint8_t       currentProfile;
