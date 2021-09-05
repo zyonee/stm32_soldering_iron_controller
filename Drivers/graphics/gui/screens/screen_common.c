@@ -6,12 +6,10 @@
  */
 #include "screen_common.h"
 
-int32_t temp, temp2, temp3, dimTimer;
+int32_t temp, dimTimer;
+uint16_t backupTemp;
 uint8_t status, profile, Selected_Tip,lang;
 int8_t dimStep;
-
-const uint8_t * font_small;
-const uint8_t * font_menu;
 
 char *tipName;
 bool disableTipCopy;
@@ -149,15 +147,3 @@ void handleOledDim(void){
   }
 }
 
-
-void update_language(void){
-  lang = systemSettings.settings.language;
-  if(lang==lang_russian){
-    font_menu = u8g2_font_8x13_t_cyrillic;
-    font_small = u8g2_font_6x13_t_cyrillic;
-  }
-  else{
-    font_menu = default_font;
-    font_small = u8g2_font_small;
-  }
-}

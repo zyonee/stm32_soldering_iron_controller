@@ -41,7 +41,7 @@ The actual requirements are 10KB RAM and 64KB **(\*)** flash.<br>
 **(\*)** Currently the firmware has surpassed the 64KB limit, and uses the additional undocumented 64KB flash block.<br>
 **(\*)** All 64KB devices have 128KB, with the 2nd 64KB block untested from the factory, so not guaranteed to work.<br>
 **(\*)** To date, I have found zero issues. Original KSGER firmware also does this.<br>
-**(\*)** ST-Link checks the written data and the firmware checksums the settings, any error will be detected.<br>
+**(\*)** ST-Link checks the written data, and the firmware uses checksums to protect the settings, any error will be detected.<br>
 
 The BOARDS folder has the board code profile, schematics and/or board pictures for quickly identify your hardware.<br>
 Current working controller:<br>
@@ -66,7 +66,10 @@ There are several compatible/cloned boards in the market that will work fine wit
 <a id="faq"></a>
 ## Frequently asked questions<br>
 
-First, make sure to read the [Operations guide](Readme_files/Operation.md)!<br>
+First, make sure to read the [Operating instructions](Readme_files/Operation.md)!<br>
+
+### Changelog<br>
+You can check the [commit history](https://github.com/deividAlfa/stm32_soldering_iron_controller/commits/master) to see what have been changed between builds.
 
 ### Backing up the original firmware
 Be warned, usually the MCU will be read-protected, so you won't be able to read its contents, only erase it.<br>
@@ -79,10 +82,17 @@ There are some hacks / vulnerabilities that can be used to backup protected firm
 
 ### Flashing the firmware
 There's no support for custom bootloaders.<br>
-Download the binary **STM32SolderingStation.bin** already compiled from the /BOARDS folder and flash it using stlink.<br>
-You don't need to erase the whole flash, that way you can preserve the settings when you updating to a new version.<br>
-The firmware will check and reset the settings if it finds out an uncompatible version, this happoens when the settings structure has changed.<br>
 Use one of these ST-LINK clones ($3 or less), refer to the schematics for the SWD pinout.<br>
+
+Download the binary **STM32SolderingStation.bin** already compiled from the /BOARDS folder and flash it using stlink.<br>
+Follow this pictures to update the firmware without erasing the stored settings.<br>
+Important: STM32F072 has 2KB flash sector size, so only de-select the last sector.<br>
+(Click for bigger picture)<br>
+<img src="/Readme_files/stlink_erase.png?raw=true"><br>
+<img src="/Readme_files/stlink_program.png?raw=true"><br>
+
+In any case, the firmware will check the settings and reset them if not valid.<br>
+
 ### Display issues<br>
 If the display has right/left line like this picture: Go to [System menu](Readme_files/Operation.md#system) / Offset and adjust the value until it's centered.<br>
 <img src="/Readme_files/oled_offset.jpg?raw=true" width="320"><br>
@@ -105,6 +115,13 @@ Buying a cheap high temperature meter is highly recommended!<br>
 These boards can have pretty different readings and tolerances. Even between T12 tips.<br>
 So the factory calibration is intentionally set lower than real, to avoid possible overheating problems.<br>
 Once you set the firmware, go to calibration and set there the real temperature measured with the external probe.<br>
+
+### Cold tip not showing ambient temperature
+Usually, a cold tip will display 20-50ºC over the ambient temperature.<br>
+Every amplifier has a small inherent voltage offset at the inputs, and this issue directly caused by that offset.<br>
+The actual offset is very low, 30ºC is about 360uV (0.000360V), so it can't be fixed easily.<br>
+Not a a firmware bug, and it doesn't affect the working temperatures when the station has been calibrated.<br>
+Some firmwares hide this reading and show the ambient temperature instead. For now, this is not a planned feature.<br>
 
 ### Calibration issues<br>
 Ensure to read [Calibration menu](Readme_files/Operation.md#calibration) first!.<br>

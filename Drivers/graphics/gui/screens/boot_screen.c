@@ -140,12 +140,12 @@ static int SaveSetup(widget_t* w) {
 }
 //=========================================================
 void draw_boot_strings(void){
-  u8g2_SetFont(&u8g2, font_menu );
+  u8g2_SetFont(&u8g2, u8g2_font_menu );
   u8g2_SetDrawColor(&u8g2, WHITE);
   putStrAligned(strings[lang].boot_firstBoot, 0, align_center);
   u8g2_DrawHLine(&u8g2, 0, 13, OledWidth);
-  u8g2_DrawUTF8(&u8g2, 0, 20, strings[lang].boot_Profile);
-  u8g2_DrawUTF8(&u8g2, 0, 37, strings[lang]._Language);
+  u8g2_DrawUTF8(&u8g2, 0, 18, strings[lang].boot_Profile);
+  u8g2_DrawUTF8(&u8g2, 0, 34, strings[lang]._Language);
 }
 
 void boot_screen_draw(screen_t *scr){
@@ -163,7 +163,8 @@ void boot_screen_draw(screen_t *scr){
 
 
 int boot_screen_processInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
-  if(lang!=current_lang){                                                       // If language changed
+  if(current_lang!=lang){                                                       // If language changed
+    current_lang=lang;
     oled_destroy_screen(scr);                                                   // Destroy and create the screen
     boot_screen_create(scr);
     scr->current_widget = Widget_lang;
@@ -222,8 +223,10 @@ void boot_screen_create(screen_t *scr){
   widget_t *w;
   displayOnly_widget_t *dis;
   editable_widget_t *edit;
-
-  update_language();
+  lang = systemSettings.settings.language;
+  if(lang>LANGUAGE_COUNT-1){
+    lang=lang_english;
+  }
   current_lang = lang;
 
   //  [ Profile Select Widget ]
@@ -232,7 +235,7 @@ void boot_screen_create(screen_t *scr){
   Widget_profile = w;
   dis=extractDisplayPartFromWidget(w);
   edit=extractEditablePartFromWidget(w);
-  dis->font = font_menu;
+  dis->font = u8g2_font_menu;
   dis->reservedChars=4;
   dis->getData = &getProfile;
   edit->big_step = 1;
@@ -242,7 +245,7 @@ void boot_screen_create(screen_t *scr){
   edit->max_value = ProfileSize-1;
   edit->options = profileStr;
   edit->numberOfOptions = ProfileSize;
-  w->posX = 76;
+  w->posX = 74;
   w->posY = 16;
   w->width = 44;
   w->enabled=0;
@@ -253,17 +256,17 @@ void boot_screen_create(screen_t *scr){
   Widget_lang = w;
   dis=extractDisplayPartFromWidget(w);
   edit=extractEditablePartFromWidget(w);
-  dis->font = font_menu;
+  dis->font = u8g2_font_menu;
   dis->reservedChars=2;
   dis->getData = &getLanguage;
   edit->big_step = 1;
   edit->step = 1;
   edit->selectable.tab = 1;
   edit->setData = (void (*)(void *))&setLanguage;
-  edit->max_value = 1;
+  edit->max_value = LANGUAGE_COUNT-1;
   edit->options = Langs;
-  edit->numberOfOptions = 2;
-  w->posX = 76;
+  edit->numberOfOptions = LANGUAGE_COUNT;
+  w->posX = 74;
   w->posY = 32;
   w->width = 44;
   w->enabled=0;
@@ -274,10 +277,10 @@ void boot_screen_create(screen_t *scr){
   Widget_ok = w;
   button_widget_t* button=Widget_ok->content;
   button->displayString = strings[lang]._SAVE;
-  button->font = font_menu;
+  button->font = u8g2_font_menu;
   button->selectable.tab = 2;
   button->action = &SaveSetup;
-  w->posX = 76;
+  w->posX = 74;
   w->posY = 48;
   w->width = 44;
   w->enabled=0;

@@ -74,6 +74,7 @@ static void * getTemp() {
 //=========================================================
 static void setSetpoint(uint32_t *val) {
   debug_temp=*val;
+  setUserTemperature(debug_temp);
 }
 static void * getSetpoint() {
   return &debug_temp;
@@ -127,7 +128,7 @@ static void * get_RAW() {
 static void * get_SET() {
   static int32_t value;
   if(update){
-    value=getDebugTemp();
+    value = human2adc(debug_temp);
   }
   temp=value;
   return &temp;
@@ -190,17 +191,19 @@ int debug_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
   update=update_GUI_Timer();
   update_draw |= update;
   updatePIDplot();
-  refreshOledDim();
+
+  refreshOledDim();                                         // Prevent display dim
   handleOledDim();
-  if(update){
-    setDebugTemp(human2adc(debug_temp));        // Needs to be updated, as the value depends on the NTC temp
-  }
+  setCurrentMode(mode_run);                                 // Prevent mode timeout
 
   if(input!=Rotate_Nothing){
     screen_timer=current_time;
   }
 
-  if(input==LongClick || ((current_time-screen_timer)>300000)){   // 5 min timeout
+  if(input==LongClick){
+    return screen_main;
+  }
+  if((current_time-screen_timer)>300000){   // 5 min timeout
     setCurrentMode(mode_sleep);
     return screen_main;
   }
@@ -243,7 +246,7 @@ static void debug_onEnter(screen_t *scr){
   displayOnly_widget_t *dis = extractDisplayPartFromWidget(widget_Temp);
 
   if(systemSettings.settings.tempUnit==mode_Celsius){
-    if(scr==&Screen_pid_debug){
+    if(scr!=&Screen_debug){
       edit->max_value = 450;
       edit->min_value = 50;
       edit->big_step = 20;
@@ -253,7 +256,7 @@ static void debug_onEnter(screen_t *scr){
     dis->endString="\260C";
   }
   else{
-    if(scr==&Screen_pid_debug){
+    if(scr!=&Screen_debug){
       edit->max_value = 850;
       edit->min_value = 120;
       edit->big_step = 50;
@@ -265,16 +268,15 @@ static void debug_onEnter(screen_t *scr){
 
   if(scr==&Screen_settings){
 
+    backupTemp=getUserTemperature();
+
     if(systemSettings.settings.tempUnit==mode_Celsius){
       debug_temp=100;
     }
     else{
       debug_temp=200;
     }
-
-    setDebugTemp(human2adc(debug_temp));
-    setCurrentMode(mode_run);
-    setDebugMode(enable);
+    setUserTemperature(debug_temp);
 
     pidPlot=_malloc(sizeof(pid_plot_t));
     pidPlot->index=0;
@@ -298,8 +300,8 @@ static void debug_onEnter(screen_t *scr){
 
 static void debug_onExit(screen_t *scr){
   if(scr!=&Screen_debug && scr!=&Screen_pid_debug){
-    setDebugMode(disable);
     _free(pidPlot);
+    setUserTemperature(backupTemp);
   }
 }
 

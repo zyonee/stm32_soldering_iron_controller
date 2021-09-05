@@ -217,7 +217,6 @@ static void setMainScrTempUnit(void) {
   }
   else{
     ((displayOnly_widget_t*)Widget_IronTemp->content)->endString="\260C";
-
     #ifdef USE_NTC
     ((displayOnly_widget_t*)Widget_AmbTemp->content)->endString="\260C";
     #endif
@@ -385,6 +384,7 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
         case Rotate_Decrement:
           if(Iron.CurrentMode==mode_boost){
             setCurrentMode(mode_run);
+            break;
           }
           else if(current_mode!=mode_run){
             IronWake(wakeButton);
@@ -508,9 +508,11 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
           break;
         }
       }
+      /*
       if(input!=Rotate_Nothing){
         IronWake(wakeButton);
       }
+      */
       break;
 
     case main_setpoint:
@@ -575,8 +577,8 @@ static void drawIcons(uint8_t *refresh){
 
 
 static void drawError(void){
-  if(lang!=lang_russian && Iron.Error.Flags==(_ACTIVE | _NO_IRON)){                               // Only "No iron detected". Don't show error screen just for it
-    u8g2_SetFont(&u8g2, u8g2_font_noIron_Sleep);
+  if(Iron.Error.Flags==(_ACTIVE | _NO_IRON)){                               // Only "No iron detected". Don't show error screen just for it
+    u8g2_SetFont(&u8g2, u8g2_font_no_iron_big);
     putStrAligned(strings[lang].main_error_noIron, 20, align_center);
   }
   else{
@@ -589,7 +591,7 @@ static void drawError(void){
     else{
       Err_ypos=12;
     }
-    u8g2_SetFont(&u8g2, font_small);
+    u8g2_SetFont(&u8g2, u8g2_font_small);
     if(Iron.Error.V_low){
       putStrAligned(strings[lang].main_error_VoltageLow, Err_ypos, align_center);
       Err_ypos+=12;
@@ -631,28 +633,35 @@ static void drawScreenSaver(uint8_t *refresh){
 static void drawMode(uint8_t *refresh){
   if(!*refresh) return;
 
-  u8g2_SetFont(&u8g2, font_small);
+  u8g2_SetFont(&u8g2, u8g2_font_small);
 
   switch(getCurrentMode()){
 
     case mode_run:
     {
       char SetTemp[6];
-      sprintf(SetTemp,"%u\260C", Iron.CurrentSetTemperature);
-      u8g2_DrawUTF8(&u8g2, 47, 0, SetTemp);
+      char c;
+      if(systemSettings.settings.tempUnit==mode_Celsius){
+        c='C';
+      }
+      else{
+        c='F';
+      }
+      sprintf(SetTemp,"%u\260%c", Iron.CurrentSetTemperature,c);
+      u8g2_DrawUTF8(&u8g2, 43, 0, SetTemp);
       break;
     }
 
     case mode_sleep:
-      u8g2_DrawUTF8(&u8g2, 43, 0, strings[lang].main_mode_Sleep);
+      u8g2_DrawUTF8(&u8g2,  strings[lang].main_mode_Sleep_xpos, 0, strings[lang].main_mode_Sleep);
       break;
 
     case mode_standby:
-      u8g2_DrawUTF8(&u8g2, 47, 0, strings[lang].main_mode_Standby);
+      u8g2_DrawUTF8(&u8g2, strings[lang].main_mode_Standby_xpos, 0, strings[lang].main_mode_Standby);
       break;
 
     case mode_boost:
-      u8g2_DrawUTF8(&u8g2, 44, 0, strings[lang].main_mode_Boost);
+      u8g2_DrawUTF8(&u8g2, strings[lang].main_mode_Boost_xpos, 0, strings[lang].main_mode_Boost);
 
     default:
       break;
@@ -727,7 +736,7 @@ static void drawPlot(uint8_t *refresh){
   }
 }
 
-void drawAux(uint8_t *refresh){
+void drawMisc(uint8_t *refresh){
   if(!*refresh) return;
   uint8_t frame=0, error=0;
   switch(mainScr.currentMode){
@@ -746,7 +755,7 @@ void drawAux(uint8_t *refresh){
       break;
   }
   if(error) drawError();
-  u8g2_SetFont(&u8g2, font_small);
+  u8g2_SetFont(&u8g2, u8g2_font_small);
   if(frame){
     uint8_t len = u8g2_GetUTF8Width(&u8g2, tipNames[systemSettings.Profile.currentTip])+4;   // Draw edit frame
     u8g2_DrawRBox(&u8g2, 0, 54, len, 10, 2);
@@ -786,7 +795,7 @@ void main_screen_draw(screen_t *scr){
   drawPowerBar(&refresh);
   drawIcons(&refresh);
   drawMode(&refresh);
-  drawAux(&refresh);
+  drawMisc(&refresh);
   drawPlot(&refresh);
 
   default_screenDraw(scr);
@@ -815,8 +824,6 @@ static void main_screen_create(screen_t *scr){
   displayOnly_widget_t* dis;
   editable_widget_t* edit;
 
-  update_language();
-
   //  [ Iron Temp Widget ]
   //
   newWidget(&w,widget_display,scr);
@@ -826,7 +833,7 @@ static void main_screen_create(screen_t *scr){
   dis->reservedChars=5;
   dis->dispAlign=align_center;
   dis->textAlign=align_center;
-  dis->font=u8g2_font_ironTemp;
+  dis->font=u8g2_font_iron_temp;
   w->posY = 15;
   dis->getData = &main_screen_getIronTemp;
   w->enabled=0;
@@ -862,7 +869,7 @@ static void main_screen_create(screen_t *scr){
   dis->reservedChars=5;
   dis->textAlign=align_center;
   dis->number_of_dec=1;
-  dis->font=font_small;
+  dis->font=u8g2_font_small;
   w->posY= 0;
   w->posX = voltXBM[0]+2;
   edit=extractEditablePartFromWidget(w);
@@ -879,7 +886,7 @@ static void main_screen_create(screen_t *scr){
   dis->dispAlign=align_right;
   dis->textAlign=align_right;
   dis->number_of_dec=1;
-  dis->font=font_small;
+  dis->font=u8g2_font_small;
   dis->getData = &main_screen_getAmbTemp;
   w->posY = 0;
   w->width = 38;
