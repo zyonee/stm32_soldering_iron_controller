@@ -7,9 +7,10 @@
 #include "screen_common.h"
 
 int32_t temp, dimTimer;
-uint16_t backupTemp;
-uint8_t status, profile, Selected_Tip,lang;
+int16_t backupTemp, ambTemp,ambTemp_x10;
+uint8_t status, profile, Selected_Tip, lang, backupMode;
 int8_t dimStep;
+tipData_t backupTip;
 
 char *tipName;
 bool disableTipCopy;
@@ -113,6 +114,9 @@ void restore_contrast(void){
 void refreshOledDim(void){
   dimTimer = current_time;
   if(dimStep<5 && getContrast()<systemSettings.settings.contrast ){
+    if(getOledPower()==disable){
+      setOledPower(enable);
+    }
     dimStep=5;
   }
 }
@@ -120,14 +124,17 @@ void refreshOledDim(void){
 void handleOledDim(void){
   static uint32_t stepTimer;
   uint8_t contrast=getContrast();
+  int16_t temp = readTipTemperatureCompensated(old_reading,read_average);
   if(dimStep==0){
-    // Wake up screen.
-    if(systemSettings.settings.screenDimming && contrast>5 && ((current_time-dimTimer)>=((uint32_t)systemSettings.settings.screenDimming*1000))){
+    if(systemSettings.settings.dim_mode && contrast>5 && ((current_time-dimTimer)>=((uint32_t)systemSettings.settings.dim_Timeout*1000))){
       dimStep=-5;
+    }
+    if(systemSettings.settings.dim_sleepMode==disable && getCurrentMode()==mode_sleep && temp<100 && contrast==1){
+      setOledPower(disable);
     }
   }
   // Smooth screen brightness dimming
-  else if(current_time-stepTimer>9){
+  else if(current_time-stepTimer>19){
     stepTimer = current_time;
     contrast+=dimStep;
     if(contrast>4 && (contrast<systemSettings.settings.contrast)){
@@ -147,3 +154,7 @@ void handleOledDim(void){
   }
 }
 
+void updateAmbientTemp(void){
+  ambTemp_x10 = readColdJunctionSensorTemp_x10(old_reading, mode_Celsius);
+  ambTemp = (ambTemp_x10+5)/10;
+}

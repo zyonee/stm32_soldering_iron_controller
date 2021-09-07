@@ -154,6 +154,15 @@ static void * getTemp() {
 static void * main_screen_getIronTemp() {
   if(mainScr.updateReadings){
     mainScr.lastTip=readTipTemperatureCompensated(old_reading,read_average);
+    if(getCurrentMode()>mode_sleep){
+      uint8_t threshold = 10;
+      if(systemSettings.settings.tempUnit==mode_Farenheit){
+        threshold = 20;
+      }
+      if(abs(mainScr.lastTip-Iron.CurrentSetTemperature<threshold)){                       // Lock numeric display if within limits
+        mainScr.lastTip = Iron.CurrentSetTemperature;
+      }
+    }
   }
   temp=mainScr.lastTip;
   return &temp;
@@ -172,7 +181,8 @@ static void * main_screen_getVin() {
 #ifdef USE_NTC
 static void * main_screen_getAmbTemp() {
   if(mainScr.updateReadings){
-    mainScr.lastAmb = readColdJunctionSensorTemp_x10(old_reading, systemSettings.settings.tempUnit);
+    updateAmbientTemp();
+    mainScr.lastAmb = ambTemp_x10;
   }
   temp=mainScr.lastAmb;
   return &temp;
@@ -322,8 +332,6 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
   }
 
 
-
-
   // Timer for ignoring user input
   if(current_time < mainScr.inputBlockTimer){
     input=Rotate_Nothing;
@@ -331,11 +339,19 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
 
   if(input!=Rotate_Nothing){
     mainScr.idleTimer = current_time;
-    refreshOledDim();
+    if(getOledPower()==disable){                                            // If oled off, block user action
+      input=Rotate_Nothing;
+    }
+    refreshOledDim();                                                       // But  wake up screen
   }
-  if(current_mode!=mode_sleep || current_temp>99 || Iron.shakeActive){
-    refreshOledDim();
+
+  if(systemSettings.settings.dim_mode!=dim_always){                         // If dim not enabled in all modes
+    if(current_mode!=mode_sleep || current_temp>99){                        // Refresh timeout if not in sleep mode
+      refreshOledDim();
+    }
   }
+
+
 
   handleOledDim();
 
@@ -343,6 +359,9 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
   if( !mainScr.shakeActive && Iron.shakeActive){
     Iron.shakeActive=0;
     mainScr.shakeActive=1;
+    if(systemSettings.settings.dim_mode<dim_always){                        // If shake is detected
+      refreshOledDim();                                                     // Only wake up the screen if dimming is not enabled in all modes
+    }
   }
   else if(mainScr.shakeActive==2 && (current_time-Iron.lastShakeTime)>50){
     mainScr.shakeActive=3; // Clear

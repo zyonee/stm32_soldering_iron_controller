@@ -57,9 +57,10 @@ typedef struct{
   char * FILTER_Reset_limit;
 
   char * SYSTEM_Profile;
-  char * SYSTEM_Contrast;
-  char * SYSTEM_Auto_Dim;
   char * SYSTEM_Offset;
+  char * SYSTEM_Contrast;
+  char * SYSTEM_Oled_Dim;
+  char * SYSTEM_Oled_Dim_SleepPower;
   char * SYSTEM_Wake_Mode;
   char * SYSTEM_Stand_Mode;
   char * SYSTEM_Boot;
@@ -108,10 +109,11 @@ typedef struct{
   char * TIP_SETTINGS_DELETE;
   char * TIP_SETTINGS_COPY;
 
+  char * CAL_InsertColdTip;
   char * CAL_Step;
   char * CAL_Wait;
   char * CAL_Measured;
-  char * CAL_Succeed;
+  char * CAL_Success;
   char * CAL_Failed;
   char * CAL_DELTA_HIGH_1;
   char * CAL_DELTA_HIGH_2;
@@ -140,12 +142,13 @@ typedef struct{
   char * ERROR_SYSTEM_HALTED;
   char * ERROR_BTN_RESET;
 
-  char *OffOn[2];
-  char *DownUp[2];
-  char *wakeMode[2];
-  char *encMode[2];
-  char *InitMode[3];
-  char *WakeModes[4];
+  char * dimMode[3];
+  char * OffOn[2];
+  char * DownUp[2];
+  char * wakeMode[2];
+  char * encMode[2];
+  char * InitMode[3];
+  char * WakeModes[4];
 
 }strings_t;
 

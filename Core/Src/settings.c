@@ -266,7 +266,9 @@ void resetSystemSettings(void) {
   __disable_irq();
   systemSettings.settings.version           = SETTINGS_VERSION;
   systemSettings.settings.contrast          = 255;
-  systemSettings.settings.screenDimming     = 10;
+  systemSettings.settings.dim_mode          = dim_sleep;
+  systemSettings.settings.dim_Timeout       = 10;
+  systemSettings.settings.dim_sleepMode     = enable;
   systemSettings.settings.OledOffset        = OLED_OFFSET;
   systemSettings.settings.errorDelay        = 1;                    // *100mS
   systemSettings.settings.guiUpdateDelay    = 200;
@@ -321,6 +323,7 @@ void resetCurrentProfile(void){
     if(systemSettings.settings.currentProfile==profile_T12){
     systemSettings.Profile.ID = profile_T12;
     for(uint8_t x = 0; x < TipSize; x++) {
+      systemSettings.Profile.tip[x].calADC_Cold     = T12_Cal_Cold;
       systemSettings.Profile.tip[x].calADC_At_250   = T12_Cal250;
       systemSettings.Profile.tip[x].calADC_At_350   = T12_Cal350;     // These values are way lower, but better to be safe than sorry
       systemSettings.Profile.tip[x].calADC_At_450   = T12_Cal450;     // User needs to calibrate its station
@@ -346,6 +349,7 @@ void resetCurrentProfile(void){
   else if(systemSettings.settings.currentProfile==profile_C245){
     systemSettings.Profile.ID = profile_C245;
     for(uint8_t x = 0; x < TipSize; x++) {
+      systemSettings.Profile.tip[x].calADC_Cold     = C245_Cal_Cold;
       systemSettings.Profile.tip[x].calADC_At_250   = C245_Cal250;
       systemSettings.Profile.tip[x].calADC_At_350   = C245_Cal350;
       systemSettings.Profile.tip[x].calADC_At_450   = C245_Cal450;
@@ -370,6 +374,7 @@ void resetCurrentProfile(void){
   else if(systemSettings.settings.currentProfile==profile_C210){
     systemSettings.Profile.ID = profile_C210;
     for(uint8_t x = 0; x < TipSize; x++) {
+      systemSettings.Profile.tip[x].calADC_Cold     = C210_Cal_Cold;
       systemSettings.Profile.tip[x].calADC_At_250   = C210_Cal250;
       systemSettings.Profile.tip[x].calADC_At_350   = C210_Cal350;
       systemSettings.Profile.tip[x].calADC_At_450   = C210_Cal450;
@@ -401,8 +406,6 @@ void resetCurrentProfile(void){
   systemSettings.Profile.tipFilter.step             = -3;   // -5% less everytime the reading diff exceeds threshold_limit and the counter is greater than count_limit
   systemSettings.Profile.tipFilter.reset_threshold  = 600;  // Any diff over 500 reset the filter (Tip removed or connected)
 
-
-  systemSettings.Profile.CalNTC                   = 25;
   systemSettings.Profile.sleepTimeout             = 5;
   systemSettings.Profile.standbyTimeout           = 5;
   systemSettings.Profile.standbyTemperature       = 180;

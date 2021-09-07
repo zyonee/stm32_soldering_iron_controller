@@ -150,11 +150,10 @@ void oled_processInput(void) {
   int ret = current_screen->processInput(current_screen, RE_Rotation, RE_State);
   if(ret > 0) {   // -1 do nothing, -2 nothing processed
     screen_t *scr = screens;
+    FillBuffer(BLACK, fill_dma);
     current_time = HAL_GetTick();
     while(scr) {
       if(scr->index == ret) {
-        FillBuffer(BLACK, fill_dma);
-        scr->refresh=screen_Erased;
 
         if(current_screen->onExit){
           current_screen->onExit(scr);
@@ -170,20 +169,27 @@ void oled_processInput(void) {
           oled_restore_comboStatus(scr);                // Restore combo position
         }
 
-        current_time = HAL_GetTick();
-        screen_timer = current_time;
+        screen_timer = current_time = HAL_GetTick();
 
         scr->init(scr);
         if(scr->onEnter){
           scr->onEnter(current_screen);
         }
-        RE_Rotation=Rotate_Nothing;                     // Force first pass without activity to update screen
-        scr->processInput(scr, RE_Rotation, RE_State);
-        if(scr->update){
-          scr->update(scr);
-        }
+
         current_screen = scr;
-        return;
+
+        ret = scr->processInput(scr, Rotate_Nothing, RE_State);     // Force first pass without activity to update screen
+
+        if( ret >0){
+          scr = screens;                                            // If new screen returned a different screen, start over
+        }
+        else{
+          if(scr->update){
+            scr->update(scr);
+          }
+          scr->refresh=screen_Erased;
+          break;
+        }
       }
       scr = scr->next_screen;
     }

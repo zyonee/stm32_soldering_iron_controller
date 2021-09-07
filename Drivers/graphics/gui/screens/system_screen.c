@@ -12,6 +12,10 @@
 screen_t Screen_system;
 screen_t Screen_system_ntc;
 
+
+static comboBox_item_t *comboitem_system_Dim_Timeout;
+static comboBox_item_t *comboitem_system_Dim_PowerOff;
+
 static comboBox_item_t *comboitem_system_ButtonWakeMode;
 static comboBox_item_t *comboitem_system_ShakeWakeMode;
 static comboBox_item_t *comboitem_system_StandMode;
@@ -120,21 +124,46 @@ static void * getOledOffset() {
   return &temp;
 }
 static void setOledOffset(uint32_t *val) {
-  systemSettings.settings.OledOffset= * val;
+  systemSettings.settings.OledOffset= *val;
 }
 //=========================================================
-static void * getOledDimming() {
-  temp = systemSettings.settings.screenDimming;
+static void * getdimMode() {
+  temp = systemSettings.settings.dim_mode;
+
+  if(systemSettings.settings.dim_mode>dim_off){
+    comboitem_system_Dim_PowerOff->enabled = 1;
+    comboitem_system_Dim_Timeout->enabled = 1;
+  }
+  else{
+    comboitem_system_Dim_PowerOff->enabled = 0;
+    comboitem_system_Dim_Timeout->enabled = 0;
+  }
   return &temp;
 }
-static void setOledDimming(uint32_t *val) {
-  systemSettings.settings.screenDimming = * val;
-}
-int OledDimming_ProcessInput(widget_t *w, RE_Rotation_t input, RE_State_t *state){
+int OledDimMode_ProcessInput(widget_t *w, RE_Rotation_t input, RE_State_t *state){
   if(input==LongClick){
     screenSaver.enabled=1;
   }
   return default_widgetProcessInput(w, input, state);
+}
+static void setdimMode(uint32_t *val) {
+  systemSettings.settings.dim_mode = * val;
+}
+//=========================================================
+static void * getDimTimeout() {
+  temp = systemSettings.settings.dim_Timeout;
+  return &temp;
+}
+static void setDimTimeout(uint32_t *val) {
+  systemSettings.settings.dim_Timeout = * val;
+}
+//=========================================================
+static void * getDimTurnOff() {
+  temp = systemSettings.settings.dim_sleepMode;
+  return &temp;
+}
+static void setDimTurnOff(uint32_t *val) {
+  systemSettings.settings.dim_sleepMode = *val;
 }
 //=========================================================
 static void * getActiveDetection() {
@@ -314,20 +343,6 @@ static void system_create(screen_t *scr){
   edit->max_value = 10;
   edit->min_value = 0;
 
-  //  [ Oled dimming Widget ]
-  //
-  newComboEditable(w, strings[lang].SYSTEM_Auto_Dim, &edit, NULL);
-  dis=&edit->inputData;
-  dis->reservedChars=4;
-  dis->endString="s";
-  dis->getData = &getOledDimming;
-  edit->big_step = 10;
-  edit->step = 5;
-  edit->setData = (void (*)(void *))&setOledDimming;
-  edit->max_value = 240;
-  edit->min_value = 0;
-  edit->selectable.processInput=&OledDimming_ProcessInput;
-
   //  [ Oled Offset Widget ]
   //
   newComboEditable(w, strings[lang].SYSTEM_Offset, &edit, NULL);
@@ -339,6 +354,46 @@ static void system_create(screen_t *scr){
   edit->setData = (void (*)(void *))&setOledOffset;
   edit->max_value = 15;
   edit->min_value = 0;
+
+  //  [ Oled dimming Widget ]
+  //
+  newComboMultiOption(w, strings[lang].SYSTEM_Oled_Dim, &edit, NULL);
+  dis=&edit->inputData;
+  dis->getData = &getdimMode;
+  edit->big_step = 1;
+  edit->step = 1;
+  edit->setData = (void (*)(void *))&setdimMode;
+  edit->max_value = 2;
+  edit->min_value = 0;
+  edit->options = strings[lang].dimMode;
+  edit->numberOfOptions = 3;
+  edit->selectable.processInput=&OledDimMode_ProcessInput;
+
+  //  [ Oled delay Widget ]
+  //
+  newComboEditable(w, strings[lang].__Delay, &edit, &comboitem_system_Dim_Timeout);
+  dis=&edit->inputData;
+  dis->reservedChars=4;
+  dis->endString="s";
+  dis->getData = &getDimTimeout;
+  edit->big_step = 10;
+  edit->step = 5;
+  edit->setData = (void (*)(void *))&setDimTimeout;
+  edit->max_value = 240;
+  edit->min_value = 5;
+
+  //  [ Oled dim turn off Widget ]
+  //
+  newComboMultiOption(w, strings[lang].SYSTEM_Oled_Dim_SleepPower, &edit, &comboitem_system_Dim_PowerOff);
+  dis=&edit->inputData;
+  dis->getData = &getDimTurnOff;
+  edit->big_step = 1;
+  edit->step = 1;
+  edit->setData = (void (*)(void *))&setDimTurnOff;
+  edit->max_value = 1;
+  edit->min_value = 0;
+  edit->options = strings[lang].OffOn;
+  edit->numberOfOptions = 2;
 
   //  [ Wake mode Widget ]
   //

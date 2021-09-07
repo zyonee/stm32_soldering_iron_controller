@@ -57,7 +57,8 @@ const strings_t strings[LANGUAGE_COUNT] = {
 
       .SYSTEM_Profile = "Profile",
       .SYSTEM_Contrast = "Contrast",
-      .SYSTEM_Auto_Dim = "Auto dim",
+      .SYSTEM_Oled_Dim = "Dimming",
+      .SYSTEM_Oled_Dim_SleepPower = " Slp pwr",
       .SYSTEM_Offset = "Offset",
       .SYSTEM_Wake_Mode = "Wake mode",
       .SYSTEM_Stand_Mode = "Stand mode",
@@ -106,10 +107,11 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .TIP_SETTINGS_COPY = "COPY",
       .TIP_SETTINGS_DELETE = "DELETE",
 
+      .CAL_InsertColdTip = "Insert cold tip",
       .CAL_Step = "CAL STEP:",
       .CAL_Wait = "WAIT...",
       .CAL_Measured = "MEASURED:",
-      .CAL_Succeed = "SUCCESS!",
+      .CAL_Success = "SUCCESS!",
       .CAL_Failed = "FAILED!",
       .CAL_DELTA_HIGH_1 = "DELTA TOO HIGH!",
       .CAL_DELTA_HIGH_2 = "Adjust manually",
@@ -144,6 +146,7 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .wakeMode =    { "SHAKE", "STAND" },
       .encMode =     { "REVERSE", "NORMAL" },
       .InitMode =    { "SLP", "STBY", "RUN" },
+      .dimMode =     { "OFF", "SLP", "ALL" },
     },
 
     [lang_russian] = {
@@ -193,7 +196,8 @@ const strings_t strings[LANGUAGE_COUNT] = {
 
       .SYSTEM_Profile = "Тип",
       .SYSTEM_Contrast = "Яркость",
-      .SYSTEM_Auto_Dim = "Затемнять",
+      .SYSTEM_Oled_Dim = "Dimming",
+      .SYSTEM_Oled_Dim_SleepPower = " Slp pwr",
       .SYSTEM_Offset = "Сдвиг",
       .SYSTEM_Wake_Mode = "ДатчикСна",
       .SYSTEM_Stand_Mode = "Подставка",
@@ -242,10 +246,11 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .TIP_SETTINGS_COPY = "ДУБЛИРОВАТЬ",
       .TIP_SETTINGS_DELETE = "УДАЛИТЬ",
 
+      .CAL_InsertColdTip = "Insert cold tip",
       .CAL_Step = "ШАГ:",
       .CAL_Wait = "ЖДИТЕ...",
       .CAL_Measured = "ЗАМЕР:",
-      .CAL_Succeed = "УСПЕШНО!",
+      .CAL_Success = "УСПЕШНО!",
       .CAL_Failed = "НЕУДАЧА!",
       .CAL_DELTA_HIGH_1 = "РАЗНИЦА ВЕЛИКА",
       .CAL_DELTA_HIGH_2 = "задайте вручную",
@@ -280,6 +285,7 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .wakeMode =    { "РУЧКА", "СТОЙКА" },
       .encMode =     { "ОБРАТНО", "ПРЯМО" },
       .InitMode =    { "ВЫКЛ", "СОН", "ПУСК" },
+      .dimMode =     { "откл", "ВЫКЛ", "все" },
 
     },
 
@@ -330,7 +336,8 @@ const strings_t strings[LANGUAGE_COUNT] = {
 
       .SYSTEM_Profile = "Profil",
       .SYSTEM_Contrast = "Kontrast",
-      .SYSTEM_Auto_Dim = "Auto dim",
+      .SYSTEM_Oled_Dim = "Dimming",
+      .SYSTEM_Oled_Dim_SleepPower = " Slp pwr",
       .SYSTEM_Offset = "Offset",
       .SYSTEM_Wake_Mode = "Väckmetod",
       .SYSTEM_Stand_Mode = "Ställ-läge",
@@ -379,10 +386,11 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .TIP_SETTINGS_COPY = "KOPIERA",
       .TIP_SETTINGS_DELETE = "RADERA",
 
+      .CAL_InsertColdTip = "Insert cold tip",
       .CAL_Step = "KAL STEG:",
       .CAL_Wait = "VÄNTA...",
       .CAL_Measured = "UPPMÄTT:",
-      .CAL_Succeed = "KAL.OK!",
+      .CAL_Success = "KAL.OK!",
       .CAL_Failed = "KAL.FEL!",
       .CAL_DELTA_HIGH_1 = "DELTA FÖR HÖGT!",
       .CAL_DELTA_HIGH_2 = "Justera manuellt",
@@ -417,6 +425,7 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .wakeMode =    { "SKAKA", "STÄLL" },
       .encMode =     { "OMVÄND", "NORMAL" },
       .InitMode =    { "SOV", "STBY", "KÖR" },
+      .dimMode =     { "AV", "SOV", "ALLA" },
     },
 };
 
