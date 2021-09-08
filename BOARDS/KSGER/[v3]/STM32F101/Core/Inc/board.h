@@ -72,21 +72,14 @@
 #define PROFILE_VALUES                                        // Enable profile values
 
 #ifdef PROFILE_VALUES
-#define T12_Cal_Cold      350
 #define T12_Cal250        1900
-#define T12_Cal350        2600
-#define T12_Cal450        3000
+#define T12_Cal400        2800
 
-#define C210_Cal_Cold     350
 #define C210_Cal250       450
-#define C210_Cal350       600
-#define C210_Cal450       700
+#define C210_Cal400       700
 
-#define C245_Cal_Cold     350
 #define C245_Cal250       900
-#define C245_Cal350       1000
-#define C245_Cal450       1100
-
+#define C245_Cal400       1000
 #endif
 
 
@@ -114,7 +107,7 @@
 #ifdef USE_NTC
 
 #define NTC_RES       10000
-#define NTC_BETA      3950
+#define NTC_BETA      3450
 #define PULL_RES      4700
 #define PULLUP
 

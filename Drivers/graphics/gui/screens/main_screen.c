@@ -153,13 +153,13 @@ static void * getTemp() {
 
 static void * main_screen_getIronTemp() {
   if(mainScr.updateReadings){
-    mainScr.lastTip=readTipTemperatureCompensated(old_reading,read_average);
+    mainScr.lastTip=readTipTemperatureCompensated(old_reading, read_average, systemSettings.settings.tempUnit);
     if(getCurrentMode()>mode_sleep){
       uint8_t threshold = 10;
       if(systemSettings.settings.tempUnit==mode_Farenheit){
         threshold = 20;
       }
-      if(abs(mainScr.lastTip-Iron.CurrentSetTemperature<threshold)){                       // Lock numeric display if within limits
+      if(Iron.temperatureReached && abs(mainScr.lastTip-Iron.CurrentSetTemperature<threshold)){                       // Lock numeric display if within limits
         mainScr.lastTip = Iron.CurrentSetTemperature;
       }
     }
@@ -182,7 +182,7 @@ static void * main_screen_getVin() {
 static void * main_screen_getAmbTemp() {
   if(mainScr.updateReadings){
     updateAmbientTemp();
-    mainScr.lastAmb = ambTemp_x10;
+    mainScr.lastAmb = last_NTC_C;
   }
   temp=mainScr.lastAmb;
   return &temp;
@@ -307,10 +307,7 @@ int8_t switchScreenMode(void){
 
 int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
   uint8_t current_mode = getCurrentMode();
-  int16_t current_temp = readTipTemperatureCompensated(old_reading,read_average);
-  if(systemSettings.settings.tempUnit==mode_Farenheit){
-    current_temp = TempConversion(current_temp, mode_Celsius, 0);
-  }
+  int16_t current_temp = last_TIP_C;
   mainScr.updateReadings=update_GUI_Timer();
   updateIronPower();
   updatePlot();
@@ -359,8 +356,8 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
   if( !mainScr.shakeActive && Iron.shakeActive){
     Iron.shakeActive=0;
     mainScr.shakeActive=1;
-    if(systemSettings.settings.dim_mode<dim_always){                        // If shake is detected
-      refreshOledDim();                                                     // Only wake up the screen if dimming is not enabled in all modes
+    if(systemSettings.settings.dim_mode<dim_always || (systemSettings.settings.dim_mode==dim_always && current_mode==mode_sleep)){                        // If shake is detected
+      refreshOledDim();                                                     // If dimmer is enabled for run mode, don't wake up the screen, only in sleep mode
     }
   }
   else if(mainScr.shakeActive==2 && (current_time-Iron.lastShakeTime)>50){
@@ -554,6 +551,9 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
 
         case Rotate_Increment_while_click:
         case Rotate_Decrement_while_click:
+          mainScr.setMode=main_irontemp;
+          break;
+
         default:
           break;
       }
