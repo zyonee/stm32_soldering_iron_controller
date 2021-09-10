@@ -279,8 +279,8 @@ void resetSystemSettings(void) {
   systemSettings.settings.saveSettingsDelay = 5;                    // 5s
   systemSettings.settings.lvp               = 110;                  // 11.0V Low voltage
   systemSettings.settings.currentProfile    = profile_None;
-  systemSettings.settings.initMode          = mode_run;
-  systemSettings.settings.buzzerMode        = disable;
+  systemSettings.settings.initMode          = mode_sleep;
+  systemSettings.settings.buzzerMode        = enable;
   systemSettings.settings.buttonWakeMode    = wake_all;
   systemSettings.settings.shakeWakeMode     = wake_all;
   systemSettings.settings.WakeInputMode     = mode_shake;
