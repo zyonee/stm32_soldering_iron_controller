@@ -322,24 +322,104 @@ void resetCurrentProfile(void){
   __disable_irq();
     if(systemSettings.settings.currentProfile==profile_T12){
     systemSettings.Profile.ID = profile_T12;
-    for(uint8_t x = 0; x < TipSize; x++) {
-      systemSettings.Profile.tip[x].calADC_At_250   = T12_Cal250;
-      systemSettings.Profile.tip[x].calADC_At_400   = T12_Cal400;     // These values are way lower, but better to be safe than sorry
-      systemSettings.Profile.tip[x].PID.Kp          = 7500;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.Ki          = 4800;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.Kd          = 1200;           // val = /1.000.000
-      systemSettings.Profile.tip[x].PID.maxI        = 85;             // val = /100
-      systemSettings.Profile.tip[x].PID.minI        = 0;              // val = /100
-      strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);         // Empty name
-    }
-    strcpy(systemSettings.Profile.tip[0].name, "BC3 ");               // Put some generic name
-    systemSettings.Profile.currentNumberOfTips      = 1;
+
+    systemSettings.Profile.tip[0].calADC_At_250   = T12_BL_Cal250;
+    systemSettings.Profile.tip[0].calADC_At_400   = T12_BL_Cal400;
+    systemSettings.Profile.tip[0].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[0].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[0].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[0].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[0].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[0].name, "BL  ");             // Tip name
+
+    systemSettings.Profile.tip[1].calADC_At_250   = T12_ILS_Cal250;
+    systemSettings.Profile.tip[1].calADC_At_400   = T12_ILS_Cal400;
+    systemSettings.Profile.tip[1].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[1].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[1].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[1].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[1].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[1].name, "ILS ");             // Tip name
+
+    systemSettings.Profile.tip[2].calADC_At_250   = T12_BC1_Cal250;
+    systemSettings.Profile.tip[2].calADC_At_400   = T12_BC1_Cal400;
+    systemSettings.Profile.tip[2].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[2].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[2].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[2].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[2].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[2].name, "BC1 ");             // Tip name
+
+    systemSettings.Profile.tip[3].calADC_At_250   = T12_BC2_Cal250;
+    systemSettings.Profile.tip[3].calADC_At_400   = T12_BC2_Cal400;
+    systemSettings.Profile.tip[3].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[3].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[3].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[3].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[3].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[3].name, "BC2 ");             // Tip name
+
+    systemSettings.Profile.tip[4].calADC_At_250   = T12_BC3_Cal250;
+    systemSettings.Profile.tip[4].calADC_At_400   = T12_BC3_Cal400;
+    systemSettings.Profile.tip[4].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[4].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[4].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[4].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[4].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[4].name, "BC3 ");             // Tip name
+
+    systemSettings.Profile.tip[5].calADC_At_250   = T12_D12_Cal250;
+    systemSettings.Profile.tip[5].calADC_At_400   = T12_D12_Cal400;
+    systemSettings.Profile.tip[5].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[5].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[5].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[5].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[5].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[5].name, "D12 ");             // Tip name
+
+    systemSettings.Profile.tip[6].calADC_At_250   = T12_D16_Cal250;
+    systemSettings.Profile.tip[6].calADC_At_400   = T12_D16_Cal400;
+    systemSettings.Profile.tip[6].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[6].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[6].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[6].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[6].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[6].name, "D16 ");             // Tip name
+
+    systemSettings.Profile.tip[7].calADC_At_250   = T12_JO2_Cal250;
+    systemSettings.Profile.tip[7].calADC_At_400   = T12_JO2_Cal400;
+    systemSettings.Profile.tip[7].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[7].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[7].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[7].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[7].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[7].name, "JO2 ");             // Tip name
+
+    systemSettings.Profile.tip[8].calADC_At_250   = T12_K_Cal250;
+    systemSettings.Profile.tip[8].calADC_At_400   = T12_K_Cal400;
+    systemSettings.Profile.tip[8].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[8].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[8].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[8].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[8].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[8].name, "K   ");             // Tip name
+
+    systemSettings.Profile.tip[9].calADC_At_250   = T12_KU_Cal250;
+    systemSettings.Profile.tip[9].calADC_At_400   = T12_KU_Cal400;
+    systemSettings.Profile.tip[9].PID.Kp          = 7500;           // val = /1.000.000
+    systemSettings.Profile.tip[9].PID.Ki          = 4800;           // val = /1.000.000
+    systemSettings.Profile.tip[9].PID.Kd          = 1200;           // val = /1.000.000
+    systemSettings.Profile.tip[9].PID.maxI        = 85;             // val = /100
+    systemSettings.Profile.tip[9].PID.minI        = 0;              // val = /100
+    strcpy(systemSettings.Profile.tip[9].name, "KU  ");             // Tip name
+
+    systemSettings.Profile.currentNumberOfTips      = 10;
     systemSettings.Profile.currentTip               = 0;
     systemSettings.Profile.impedance                = 80;             // 8.0 Ohms
     systemSettings.Profile.power                    = 80;             // 80W
     systemSettings.Profile.noIronValue              = 4000;
-    systemSettings.Profile.Cal250_default           = T12_Cal250;
-    systemSettings.Profile.Cal400_default           = T12_Cal400;
+    systemSettings.Profile.Cal250_default           = T12_BL_Cal250;
+    systemSettings.Profile.Cal400_default           = T12_BL_Cal400;
 
   }
 
