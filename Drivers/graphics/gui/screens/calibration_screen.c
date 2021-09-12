@@ -205,26 +205,25 @@ static void setCalState(state_t s) {
 //=========================================================
 static void Cal_onEnter(screen_t *scr) {
   if(scr == &Screen_settings) {
-    Iron.calibrating=1;
-    setCurrentMode(mode_run);
     backupMode=getCurrentMode();
     backupTemp=getUserTemperature();
     Currtip = getCurrentTip();
     comboResetIndex(Screen_calibration.widgets);
     error=0;
+    setCalibrationMode(enable);
   }
 
   setUserTemperature(0);
 }
 static void Cal_onExit(screen_t *scr) {
   if(scr!=&Screen_calibration_start && scr!=&Screen_calibration_settings ){
-    Iron.calibrating=0;
+    setCalibrationMode(disable);
     setCurrentMode(backupMode);
     setUserTemperature(backupTemp);
   }
 }
 
-static void Cal_draw(screen_t *scr){
+static uint8_t Cal_draw(screen_t *scr){
   if(error==1){
     error=2;
     Screen_calibration.widgets->enabled=0;
@@ -234,7 +233,7 @@ static void Cal_draw(screen_t *scr){
     putStrAligned(strings[lang].CAL_Error, 10, align_center);
     putStrAligned(strings[lang].CAL_Aborting, 25, align_center);
   }
-  default_screenDraw(scr);
+  return (error==2 || default_screenDraw(scr));
 }
 
 static int Cal_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_State_t *s) {
@@ -243,7 +242,10 @@ static int Cal_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_State_
   handleOledDim();
 
   if(error){
-    if(error==2 && (current_time-errorTimer)>2000 ){
+    if(error==2){
+      error++;
+    }
+    else if(error==3 && (current_time-errorTimer)>2000 ){
       error=0;
       widgetEnable(Screen_calibration.widgets);
       scr->refresh=screen_Erase;
@@ -352,7 +354,7 @@ static void Cal_Start_OnExit(screen_t *scr) {
   __enable_irq();
 }
 
-static void Cal_Start_draw(screen_t *scr){
+static uint8_t Cal_Start_draw(screen_t *scr){
   char str[20];
 
   if(update_draw){
@@ -395,7 +397,7 @@ static void Cal_Start_draw(screen_t *scr){
       putStrAligned(strings[lang].CAL_DELTA_HIGH_3, 30, align_center);
     }
   }
-  default_screenDraw(scr);
+  return (default_screenDraw(scr));
 }
 
 static void Cal_Start_create(screen_t *scr) {

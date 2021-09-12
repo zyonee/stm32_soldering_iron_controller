@@ -55,6 +55,7 @@ typedef struct {
   uint8_t             DebugMode;                            // Flag to indicate Debug is enabled
   uint8_t             updatePwm;                            // Flag to indicate PWM need to be updated
   IronError_t         Error;                                // Error flags
+  uint8_t             beforeErrorMode;                      // Active mode before the error.
 
   uint16_t            Pwm_Period;                           // PWM period
   uint16_t            Pwm_Max;                              // Max PWM output for power limit
@@ -106,6 +107,8 @@ void setDebugTemp(uint16_t value);
 uint16_t getDebugTemp(void);
 void setDebugMode(uint8_t value);
 uint8_t getDebugMode(void);
+void setCalibrationMode(uint8_t mode);
+uint8_t getCalibrationMode(void);
 void configurePWMpin(uint8_t mode);
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *_htim);
 #endif /* IRON_H_ */

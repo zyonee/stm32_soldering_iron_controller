@@ -99,13 +99,17 @@ void handleIron(void) {
   checkIronError();
   // Controls external mode changes (from stand mode changes), this acts as a debouncing timer
   if(Iron.updateStandMode==needs_update){
-    if(Iron.Error.active){
+    if(Iron.Error.active || Iron.calibrating){                                      // Ignore changes when error active or calibrating
       Iron.updateStandMode=no_update;
     }
     else if((CurrentTime-Iron.LastModeChangeTime)>100){                             // Wait 100mS with no changes (de-bouncing)
       Iron.updateStandMode=no_update;
       setCurrentMode(Iron.changeMode);
     }
+  }
+
+  if(Iron.calibrating){                                                             // If calibrating, force run mode
+    setCurrentMode(mode_run);
   }
 
   // If sleeping or error, stop here
@@ -123,26 +127,25 @@ void handleIron(void) {
   uint32_t sleep_time = (uint32_t)systemSettings.Profile.sleepTimeout*60000;
   uint32_t standby_time = (uint32_t)systemSettings.Profile.standbyTimeout*60000;
 
-  if(Iron.calibrating==disable){                                                      // Don't enter low power states while calibrating. Calibration always forces run mode
-    if((Iron.CurrentMode==mode_boost) && (mode_time>boost_time)){                             // If boost mode and time expired
-      setCurrentMode(mode_run);
-    }
-    else if(Iron.CurrentMode==mode_run){                                                      // If running
-      if(standby_time){                                                                       // If standby timer enabled
-        if(mode_time>standby_time){                                                           // Check timeout
-          setCurrentMode(mode_standby);
-        }
-      }
-      else{                                                                                   // Otherwise, check sleep timeout
-        if(mode_time>sleep_time){                                                             //
-          setCurrentMode(mode_sleep);
-        }
+  // Don't enter low power states while calibrating. Calibration always forces run mode
+  if((Iron.CurrentMode==mode_boost) && (mode_time>boost_time)){                             // If boost mode and time expired
+    setCurrentMode(mode_run);
+  }
+  else if(Iron.CurrentMode==mode_run){                                                      // If running
+    if(standby_time){                                                                       // If standby timer enabled
+      if(mode_time>standby_time){                                                           // Check timeout
+        setCurrentMode(mode_standby);
       }
     }
-    else if(Iron.CurrentMode==mode_standby){                                                  // If in standby
-      if(mode_time>sleep_time){                                                               // Check sleep timeout
+    else{                                                                                   // Otherwise, check sleep timeout
+      if(mode_time>sleep_time){                                                             //
         setCurrentMode(mode_sleep);
       }
+    }
+  }
+  else if(Iron.CurrentMode==mode_standby){                                                  // If in standby
+    if(mode_time>sleep_time){                                                               // Check sleep timeout
+      setCurrentMode(mode_sleep);
     }
   }
 
@@ -483,11 +486,13 @@ void setCurrentMode(uint8_t mode){
     Iron.CurrentSetTemperature = Iron.UserSetTemperature;                                 // Set user temp (sleep mode ignores this)
   }
   if(Iron.CurrentMode != mode){                                                           // If current mode is different
-    resetPID();
-    buzzer_long_beep();
     Iron.CurrentMode = mode;
-    modeChanged(mode);
-    if(Iron.CurrentMode == mode_run){
+    resetPID();
+    if(!Iron.calibrating){
+      buzzer_long_beep();
+      modeChanged(mode);
+    }
+    if(mode == mode_run){
       Iron.temperatureReached = 0;
     }
   }
@@ -544,7 +549,7 @@ void readWake(void){
 }
 
 void resetIronError(void){
-  Iron.LastErrorTime += (systemSettings.settings.errorDelay+1*100);                     // Bypass timeout
+  Iron.LastErrorTime += (systemSettings.Profile.errorDelay+1*100);                     // Bypass timeout
   checkIronError();                                                                     // Refresh Errors
 }
 
@@ -571,6 +576,7 @@ void checkIronError(void){
       if(Err.Flags!=_NO_IRON){                                                        // Avoid alarm if only the tip is removed
         buzzer_alarm_start();
       }
+      Iron.beforeErrorMode = Iron.CurrentMode;
       Iron.Error.active = 1;
       setCurrentMode(mode_sleep);
       Iron.Pwm_Out = 0;
@@ -579,10 +585,18 @@ void checkIronError(void){
     }
   }
   else if (Iron.Error.active && !Err.Flags){                                                // If global flag set, but no errors
-    if((CurrentTime-Iron.LastErrorTime)>(systemSettings.settings.errorDelay*100)){          // Check enough time has passed
+    if((CurrentTime-Iron.LastErrorTime)>(systemSettings.Profile.errorDelay*100)){           // Check enough time has passed
       Iron.Error.Flags = 0;
       buzzer_alarm_stop();
-      setCurrentMode(mode_run);
+      if(systemSettings.Profile.errorResumeMode==error_sleep){
+        setCurrentMode(mode_sleep);
+      }
+      else if(systemSettings.Profile.errorResumeMode==error_run){
+        setCurrentMode(mode_run);
+      }
+      else{
+        setCurrentMode(Iron.beforeErrorMode);
+      }
     }
   }
   else{
@@ -635,6 +649,15 @@ uint8_t getDebugMode(void){
   return Iron.DebugMode;
 }
 
+void setCalibrationMode(uint8_t mode){
+  __disable_irq();
+  Iron.calibrating = mode;
+  __enable_irq();
+}
+
+uint8_t getCalibrationMode(void){
+  return Iron.calibrating;
+}
 void setUserTemperature(uint16_t temperature) {
   __disable_irq();
   Iron.UserSetTemperature = temperature;

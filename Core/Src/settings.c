@@ -23,7 +23,7 @@ flashSettings_t* flashSettings = (flashSettings_t*)FLASH_ADDR;
 void checksumError(uint8_t mode);
 void Flash_error(void);
 void Button_reset(void);
-void Diag_init(void);
+void Oled_error_init(void);
 void ErrCountDown(uint8_t Start,uint8_t xpos, uint8_t ypos);
 
 
@@ -268,9 +268,8 @@ void resetSystemSettings(void) {
   systemSettings.settings.contrast          = 255;
   systemSettings.settings.dim_mode          = dim_sleep;
   systemSettings.settings.dim_Timeout       = 10;
-  systemSettings.settings.dim_inSleep     = enable;
+  systemSettings.settings.dim_inSleep       = enable;
   systemSettings.settings.OledOffset        = OLED_OFFSET;
-  systemSettings.settings.errorDelay        = 1;                    // *100mS
   systemSettings.settings.guiUpdateDelay    = 200;
   systemSettings.settings.tempUnit          = mode_Celsius;
   systemSettings.settings.tempStep          = 5;                    // 5º steps
@@ -477,19 +476,21 @@ void resetCurrentProfile(void){
   systemSettings.Profile.tipFilter.step             = -3;   // -5% less everytime the reading diff exceeds threshold_limit and the counter is greater than count_limit
   systemSettings.Profile.tipFilter.reset_threshold  = 600;  // Any diff over 500 reset the filter (Tip removed or connected)
 
-  systemSettings.Profile.sleepTimeout             = 5;
-  systemSettings.Profile.standbyTimeout           = 5;
-  systemSettings.Profile.standbyTemperature       = 180;
-  systemSettings.Profile.UserSetTemperature       = 180;
-  systemSettings.Profile.MaxSetTemperature        = 450;
-  systemSettings.Profile.MinSetTemperature        = 180;
-  systemSettings.Profile.boostTimeout             = 30;
-  systemSettings.Profile.boostTemperature         = 50;
-  systemSettings.Profile.pwmMul                   = 1;
-  systemSettings.Profile.readPeriod               = (200*200)-1;             // Because we have a 5uS timer clock
-  systemSettings.Profile.readDelay                = (20*200)-1;
-  systemSettings.Profile.tempUnit                 = mode_Celsius;
-  systemSettings.Profile.NotInitialized           = initialized;
+  systemSettings.Profile.errorDelay                 = 1;    // *100mS
+  systemSettings.Profile.errorResumeMode            = error_resume;
+  systemSettings.Profile.sleepTimeout               = 5;
+  systemSettings.Profile.standbyTimeout             = 5;
+  systemSettings.Profile.standbyTemperature         = 180;
+  systemSettings.Profile.UserSetTemperature         = 180;
+  systemSettings.Profile.MaxSetTemperature          = 450;
+  systemSettings.Profile.MinSetTemperature          = 180;
+  systemSettings.Profile.boostTimeout               = 30;
+  systemSettings.Profile.boostTemperature           = 50;
+  systemSettings.Profile.pwmMul                     = 1;
+  systemSettings.Profile.readPeriod                 = (200*200)-1;             // 200ms * 200  because timer period is 5us
+  systemSettings.Profile.readDelay                  = (20*200)-1;              // 20ms
+  systemSettings.Profile.tempUnit                   = mode_Celsius;
+  systemSettings.Profile.NotInitialized             = initialized;
   __enable_irq();
 }
 
@@ -533,11 +534,12 @@ void loadProfile(uint8_t profile){
   __enable_irq();
 }
 
-void Diag_init(void){
+void Oled_error_init(void){
   setContrast(255);
   FillBuffer(BLACK,fill_soft);
   u8g2_SetFont(&u8g2,default_font );
   u8g2_SetDrawColor(&u8g2, WHITE);
+  u8g2_SetMaxClipWindow(&u8g2);
   systemSettings.settings.OledOffset = OLED_OFFSET;
 }
 
@@ -549,7 +551,7 @@ void Flash_error(void){
 }
 
 void checksumError(uint8_t mode){
-  Diag_init();
+  Oled_error_init();
   putStrAligned("BAD CHECKSUM!", 0, align_center);
   putStrAligned("RESTORING...", 30, align_center);
   update_display();
@@ -568,7 +570,7 @@ void checksumError(uint8_t mode){
 void Button_reset(void){
   uint16_t ResetTimer= HAL_GetTick();
   if(!BUTTON_input()){
-    Diag_init();
+    Oled_error_init();
     putStrAligned("HOLD BUTTON", 10, align_center);
     putStrAligned("TO RESTORE", 26, align_center);
     putStrAligned("DEFAULTS", 42, align_center);

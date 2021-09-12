@@ -12,6 +12,7 @@
 
 #define default_font u8g2_font_menu
 
+//#define COMBO_SLIDE_TEXT                                                    // Testing feature, not enabled by default
 
 typedef enum widgetStateType {widget_idle, widget_selected, widget_edit, widget_error}widgetStateType;
 typedef enum widgetFieldType {field_int32, field_bmp, field_string}widgetFieldType;
@@ -20,6 +21,8 @@ typedef enum widgetFrameType {frame_auto, frame_solid, frame_outline, frame_disa
 typedef enum widgetType {widget_combo, widget_label, widget_display, widget_editable, widget_bmp, widget_multi_option, widget_button, widget_bmp_button}widgetType;
 typedef enum comboType {combo_Screen, combo_Editable, combo_MultiOption, combo_Action}comboType;
 typedef enum widgetRefreshType {refresh_idle, refresh_triggered, refresh_always}widgetRefreshType;
+typedef enum slideStatus {slide_reset, slide_disabled, slide_restart, slide_running, slide_limit}slideStatus;
+
 typedef struct widget_t widget_t;
 typedef struct selectable_widget_t selectable_widget_t;
 typedef struct editable_widget_t editable_widget_t;
@@ -95,9 +98,9 @@ struct comboBox_widget_t {
 };
 
 struct comboBox_item_t {
-  comboBox_item_t *next_item;
-  comboType type;
   uint8_t enabled;
+  comboType type;
+  comboBox_item_t *next_item;
   AlignType dispAlign;
   union{
     uint8_t action_screen;
@@ -120,7 +123,7 @@ struct widget_t
   widget_t *next_widget;
 
   struct screen_t *parent;
-  void (*draw)(widget_t*);
+  uint8_t (*draw)(widget_t*);
   void (*update)(widget_t*);
   void* content;
 };
@@ -136,7 +139,7 @@ comboBox_item_t *newComboItem(void);
 void widgetAlign(widget_t* w);
 void widgetDefaultsInit(widget_t *w, widgetType type);
 void editableDefaultsInit(editable_widget_t* editable, widgetType type);
-void default_widgetDraw(widget_t* w);
+uint8_t default_widgetDraw(widget_t* w);
 void default_widgetUpdate(widget_t *w);
 void widgetDetectChange(widget_t* w, int32_t val);
 void widgetClearField(widget_t* w);
@@ -144,7 +147,7 @@ void widgetEnable(widget_t* w);
 void widgetDisable(widget_t* w);
 int default_widgetProcessInput(widget_t *w, RE_Rotation_t input, RE_State_t *state);
 int comboBoxProcessInput(widget_t* w, RE_Rotation_t, RE_State_t *);
-void comboBoxDraw(widget_t *w);
+uint8_t comboBoxDraw(widget_t *w);
 void newComboScreen(widget_t *w, char *label, uint8_t actionScreen, comboBox_item_t **newItem);
 void newComboEditable( widget_t *combo, char *label, editable_widget_t **newEdit, comboBox_item_t **newItem);
 void newComboMultiOption(widget_t *w, char *label, editable_widget_t **newEdit, comboBox_item_t **newItem);
