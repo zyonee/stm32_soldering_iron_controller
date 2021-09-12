@@ -501,6 +501,7 @@ void setCurrentMode(uint8_t mode){
 
 // Called from program timer if WAKE change is detected
 void IronWake(bool source){                                                                 // source: handle shake, encoder push button
+  static uint32_t last_time;
   if(Iron.Error.Flags || systemSettings.settings.WakeInputMode==mode_stand){
     return;
   }
@@ -519,10 +520,18 @@ void IronWake(bool source){                                                     
       return;
     }
   }
+
+  if(systemSettings.settings.shakeFiltering){                           // Sensitivity workaround enabled
+    uint32_t time=(HAL_GetTick()-last_time);
+    last_time = HAL_GetTick();
+    if(time<100 || time>500){                                           // Ignore changes happening faster than 100mS or slower than 500mS.
+      return;
+    }
+  }
   if(Iron.CurrentMode<mode_boost){
-    __disable_irq();
-    setCurrentMode(mode_run);
-    __enable_irq();
+      __disable_irq();
+      setCurrentMode(mode_run);
+      __enable_irq();
   }
 }
 

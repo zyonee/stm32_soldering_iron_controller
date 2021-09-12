@@ -282,6 +282,7 @@ void resetSystemSettings(void) {
   systemSettings.settings.buzzerMode        = enable;
   systemSettings.settings.buttonWakeMode    = wake_all;
   systemSettings.settings.shakeWakeMode     = wake_all;
+  systemSettings.settings.shakeFiltering    = enable;
   systemSettings.settings.WakeInputMode     = mode_shake;
   systemSettings.settings.StandMode         = mode_sleep;
   systemSettings.settings.EncoderMode       = RE_Mode_One;
