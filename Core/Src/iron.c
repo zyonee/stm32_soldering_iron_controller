@@ -82,7 +82,7 @@ void ironInit(TIM_HandleTypeDef *delaytimer, TIM_HandleTypeDef *pwmtimer, uint32
 }
 
 void handleIron(void) {
-  static uint8_t reachedCount = 0;
+  static uint32_t reachedTime = 0;
   CurrentTime = HAL_GetTick();
 
   readColdJunctionSensorTemp_x10(new_reading, mode_Celsius);
@@ -123,34 +123,31 @@ void handleIron(void) {
 
   // Controls inactivity timer and enters low power modes
   uint32_t mode_time = CurrentTime - Iron.CurrentModeTimer;
-  uint32_t boost_time = (uint32_t)systemSettings.Profile.boostTimeout*1000;
-  uint32_t sleep_time = (uint32_t)systemSettings.Profile.sleepTimeout*60000;
-  uint32_t standby_time = (uint32_t)systemSettings.Profile.standbyTimeout*60000;
 
   // Don't enter low power states while calibrating. Calibration always forces run mode
-  if((Iron.CurrentMode==mode_boost) && (mode_time>boost_time)){                             // If boost mode and time expired
+  if((Iron.CurrentMode==mode_boost) && (mode_time>systemSettings.Profile.boostTimeout)){    // If boost mode and time expired
     setCurrentMode(mode_run);
   }
   else if(Iron.CurrentMode==mode_run){                                                      // If running
-    if(standby_time){                                                                       // If standby timer enabled
-      if(mode_time>standby_time){                                                           // Check timeout
+    if(systemSettings.Profile.standbyTimeout){                                              // If standby timer enabled
+      if(mode_time>systemSettings.Profile.standbyTimeout){                                  // Check timeout
         setCurrentMode(mode_standby);
       }
     }
     else{                                                                                   // Otherwise, check sleep timeout
-      if(mode_time>sleep_time){                                                             //
+      if(mode_time>systemSettings.Profile.sleepTimeout){                                    //
         setCurrentMode(mode_sleep);
       }
     }
   }
   else if(Iron.CurrentMode==mode_standby){                                                  // If in standby
-    if(mode_time>sleep_time){                                                               // Check sleep timeout
+    if(mode_time>systemSettings.Profile.sleepTimeout){                                      // Check sleep timeout
       setCurrentMode(mode_sleep);
     }
   }
 
 
-  if(Iron.updatePwm){
+  if(Iron.updatePwm){                                                                       // If pending PWM period update, refresh Iron Pwm_period
     Iron.Pwm_Period = ((systemSettings.Profile.readPeriod+1)/systemSettings.Profile.pwmMul)-1;
   }
 
@@ -172,31 +169,35 @@ void handleIron(void) {
   else if(Iron.Pwm_Out == Iron.Pwm_Max){
     Iron.CurrentIronPower = 100;
   }
-  else if(Iron.Pwm_Out <= Iron.Pwm_Max){
+  else if(Iron.Pwm_Out < Iron.Pwm_Max){
     Iron.CurrentIronPower = ((uint32_t)Iron.Pwm_Out*100)/Iron.Pwm_Max;                        // Compute new %
   }
-  else{
+  else{                                                                                       // Iron.Pwm_Out should never be greater than Iron.Pwm_Max
     Error_Handler();
   }
-  if(Iron.updatePwm){
+  
+  if(Iron.updatePwm){                                                                         // If pending PWM period update, refresh timer
     Iron.updatePwm=0;
     __HAL_TIM_SET_AUTORELOAD(Iron.Pwm_Timer, Iron.Pwm_Period);
   }
   __HAL_TIM_SET_COMPARE(Iron.Pwm_Timer, Iron.Pwm_Channel, Iron.Pwm_Out);                      // Load new calculated PWM Duty
 
-  // For calibration process. Add +-2ºC detection margin
+  // For calibration process. Add +-5ºC detection margin
   int16_t setTemp = Iron.CurrentSetTemperature;
   if(systemSettings.settings.tempUnit==mode_Farenheit){
     setTemp = TempConversion(setTemp, mode_Celsius, 0);
   }
-  if( !Iron.temperatureReached && abs(setTemp-last_TIP_C)<5){                                   // Allow +-5° margin
-    if(++reachedCount>5){                                                                     // Get at least 5 stable readings
+  if( !Iron.temperatureReached && abs(setTemp-last_TIP_C)<5){                                 // Allow +-5° margin for noisier stations
+    if(reachedTime==0){
+      reachedTime=CurrentTime;
+    }
+    else if(CurrentTime-reachedTime>1000){                                                    // Wait 1s for stable readings
       temperatureReached( Iron.CurrentSetTemperature);
       Iron.temperatureReached = 1;
     }
   }
   else{
-    reachedCount = 0;
+    reachedTime = 0;
   }
 }
 
@@ -500,24 +501,24 @@ void setCurrentMode(uint8_t mode){
 }
 
 // Called from program timer if WAKE change is detected
-void IronWake(bool source){                                                                 // source: handle shake, encoder push button
+bool IronWake(bool source){                                                                 // source: handle shake, encoder push button
   static uint32_t last_time;
   if(Iron.Error.Flags || systemSettings.settings.WakeInputMode==mode_stand){
-    return;
+    return 0;
   }
 
   if(Iron.CurrentMode==mode_standby){
     if( (source==wakeButton && !(systemSettings.settings.buttonWakeMode & wake_standby)) ||
         (source==wakeInput && !(systemSettings.settings.shakeWakeMode & wake_standby))){
 
-      return;
+      return 0;
     }
   }
   else if(Iron.CurrentMode==mode_sleep){
     if( (source==wakeButton && !(systemSettings.settings.buttonWakeMode & wake_sleep)) ||
         (source==wakeInput && !(systemSettings.settings.shakeWakeMode & wake_sleep))){
 
-      return;
+      return 0;
     }
   }
 
@@ -525,7 +526,7 @@ void IronWake(bool source){                                                     
     uint32_t time=(HAL_GetTick()-last_time);
     last_time = HAL_GetTick();
     if(time<200 || time>400){                                           // Ignore changes happening faster than 100mS or slower than 500mS.
-      return;
+      return 0;
     }
   }
   if(Iron.CurrentMode<mode_boost){
@@ -533,6 +534,7 @@ void IronWake(bool source){                                                     
       setCurrentMode(mode_run);
       __enable_irq();
   }
+  return 1;
 }
 
 void readWake(void){
@@ -550,15 +552,16 @@ void readWake(void){
         }
       }
       else{
-        IronWake(wakeInput);
-        Iron.shakeActive = 1;
-        Iron.lastShakeTime = HAL_GetTick();
+        if(IronWake(wakeInput)){
+          Iron.shakeActive = 1;
+          Iron.lastShakeTime = HAL_GetTick();
+        }
       }
     }
 }
 
 void resetIronError(void){
-  Iron.LastErrorTime += (systemSettings.Profile.errorDelay+1*100);                     // Bypass timeout
+  Iron.LastErrorTime += (systemSettings.Profile.errorTimeout+1);                        // Bypass timeout
   checkIronError();                                                                     // Refresh Errors
 }
 
@@ -594,7 +597,7 @@ void checkIronError(void){
     }
   }
   else if (Iron.Error.active && !Err.Flags){                                                // If global flag set, but no errors
-    if((CurrentTime-Iron.LastErrorTime)>(systemSettings.Profile.errorDelay*100)){           // Check enough time has passed
+    if((CurrentTime-Iron.LastErrorTime)>systemSettings.Profile.errorTimeout){           // Check enough time has passed
       Iron.Error.Flags = 0;
       buzzer_alarm_stop();
       if(systemSettings.Profile.errorResumeMode==error_sleep){

@@ -123,10 +123,10 @@ void handleOledDim(void){
     refreshOledDim();                                                   //(Something woke the station from sleep)
   }
   if(dimStep==0){
-    if(systemSettings.settings.dim_mode && contrast>5 && ((current_time-dimTimer)>=((uint32_t)systemSettings.settings.dim_Timeout*1000))){
+    if(systemSettings.settings.dim_mode && contrast>5 && ((current_time-dimTimer)>=systemSettings.settings.dim_Timeout)){
       dimStep=-5;
     }
-    if(systemSettings.settings.dim_inSleep==disable && getCurrentMode()==mode_sleep && last_TIP_C<100 && contrast==1){
+    if(systemSettings.settings.dim_inSleep==disable && getCurrentMode()==mode_sleep && contrast==1 && (last_TIP_C<100 || (Iron.Error.Flags & _ACTIVE))){  // Turn of screen if temp<100ºC or error active
       setOledPower(disable);
     }
   }

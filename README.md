@@ -43,13 +43,14 @@ The actual requirements are 10KB RAM and 64KB **(\*)** flash.<br>
 **(\*)** To date, I have found zero issues. Original KSGER firmware also does this.<br>
 **(\*)** ST-Link checks the written data, and the firmware uses checksums to protect the settings, any error will be detected.<br>
 
-The BOARDS folder has the board code profile, schematics and/or board pictures for quickly identify your hardware.<br>
-Current working controller:<br>
-* Quicko T12 [STABLE]: Profiles for STM32F072 and STM32F103.
-* JCD T12    [STABLE]: Different board layout, but it's 100% the same as the KSGER v2. Use that firmware.
-* KSGER v1.5 [STABLE]: Profile for STM32F103 (There are no other known CPUs used in this board).
-* KSGER v2.x [STABLE]: Profile compatible with all STM32F101/2/3xx. Use 101C8 profile.
-* KSGER v3.x [STABLE]: Profile compatible with all STM32F101/2/3xx. Use 101C8 profile.
+The [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder has the board code profile, schematics and/or board pictures for quickly identify your hardware.<br>
+Currently supported controllers (Click to download the latest build):<br>
+* [**Quicko T12-072**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F072/STM32SolderingStation.bin): For STM32F072 variant.
+* [**Quicko T12-103**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F103/STM32SolderingStation.bin): For STM32F103 variant.
+* [**KSGER v1.5**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv1.5%5D/STM32SolderingStation.bin): Profile for STM32F103 (There are no other known CPUs used in this board).
+* [**KSGER v2.x**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
+* [**KSGER v3.x**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv3%5D/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
+* [**JCD T12**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32SolderingStation.bin): Different board layout, but it's the same as the KSGER v2.
 
 
 Actually, the easiest way to quickly identify your KGSER version is by looking at the Oled screen connection:<br>
@@ -57,7 +58,7 @@ Actually, the easiest way to quickly identify your KGSER version is by looking a
 - **6 pin** (SPI) = v3.x<br>
 
 Also keep in mind that you can't trust the version shown in the original firmware to identify your board.<br>
-Go to BOARDS/... schematics folder and compare the pictures.<br>
+Go to [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS)/... schematics folder and compare the pictures.<br>
 There are several compatible/cloned boards in the market that will work fine with Ksger profiles.<br>
 
 
@@ -68,12 +69,15 @@ There are several compatible/cloned boards in the market that will work fine wit
 
 First, make sure to read the [Operating instructions](Readme_files/Operation.md)!<br>
 
+ 
 ### Changelog<br>
 You can check the [commit history](https://github.com/deividAlfa/stm32_soldering_iron_controller/commits/master) to see what have been changed between builds.
 
 ### Backing up the original firmware
-Be warned, usually the MCU will be read-protected, so you won't be able to read its contents, only erase it.<br>
-For KSGER boards, some can be found over internet.<br>
+The original firmwares are available here: [[KSGER]](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS/KSGER/Original_FW)  [[Quicko]](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS/Quicko/Original_FW)<br>
+Some KSGER firmwares require an activation code which can be generated [[HERE]](http://t12.omegahg.com/keygen.htm)  [[Alternative link]](https://raw.githack.com/deividAlfa/stm32_soldering_iron_controller/master/[BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS)/KSGER/Original_FW/Gen/gen.htm)<br>
+
+Be warned, usually the MCU will be read-protected, so you won't be able to read its contents, only erase it.<br> 
 The simplest way to not loose the original FW is actually to buy a new MCU, replace it, and store the original MCU in a safe place.<br>
 Any difference in the pinout will require firmware tuning, although one of the main proposits of this firmware is easing that.<br>
 There are some hacks / vulnerabilities that can be used to backup protected firmware, more details here:<br>
@@ -84,7 +88,7 @@ There are some hacks / vulnerabilities that can be used to backup protected firm
 There's no support for custom bootloaders.<br>
 Use one of these ST-LINK clones ($3 or less), refer to the schematics for the SWD pinout.<br>
 
-Download the binary **STM32SolderingStation.bin** already compiled from the /BOARDS folder and flash it using stlink.<br>
+Download the binary **STM32SolderingStation.bin** already compiled from the [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder and flash it using stlink.<br>
 Follow this pictures to update the firmware without erasing the stored settings.<br>
 Important: STM32F072 has 2KB flash sector size, so only de-select the last sector.<br>
 (Click for bigger picture)<br>
@@ -116,31 +120,35 @@ These boards can have pretty different readings and tolerances. Even between T12
 So the factory calibration is intentionally set lower than real, to avoid possible overheating problems.<br>
 Once you set the firmware, go to calibration and set there the real temperature measured with the external probe.<br>
 
-### Cold tip not showing ambient temperature
-Usually, a cold tip will display 20-50ºC over the ambient temperature.<br>
-Every amplifier has a small inherent voltage offset at the inputs, and this issue directly caused by that offset.<br>
-The actual offset is very low, 30ºC is about 360uV (0.000360V), so it can't be fixed easily.<br>
-Not a a firmware bug, and it doesn't affect the working temperatures when the station has been calibrated.<br>
-Some firmwares hide this reading and show the ambient temperature instead. For now, this is not a planned feature.<br>
-
 ### Calibration issues<br>
 Ensure to read [Calibration menu](Readme_files/Operation.md#calibration) first!.<br>
 To calibrate, go into Calibration / Start.<br>
 Attach the temperature probe before proceeding!<br>
 If the difference between measured and real is higher than 50ºC, the calibration will be aborted, telling you to go into Calibration / Settings and manually adjust the values.<br>
-The calibration settings menu has 3 calibration steps: 250, 350 and 450ºC.<br>
-When you edit the value, the it will be applied in real time, so be careful!<br>
-The iron will be turned off if no setting is being edited.<br>
-Adjust each value until is close to the target temperature.Repeat for each step and save.<br>
+The calibration settings menu has 3 calibration steps: Zero set, 250 and 400°C.<br>
+When you edit 250/400ºC value, the power will be enabled and the value applied in real time, so be careful!<br>
+The power will be removed when no settings are being edited.<br>
+Adjust each value until it's close to the target temperature. Repeat for each step and save.<br>
 This values are only used by the calibration process, to prevent burning the tip if your board reads too low.<br>
 After adjusting, repeat calibration, this time it should work correctly.<br>
 The calibration results for the current tip can be seen in the tip settings menu.<br>
+Tip settings menu calibration values aren't meant to be another calibration menu, only for viewing (Ex. reporting calibration results) and for backup/restore purposes.<br>
 In the case you lose, wipe or reset the data, you can go back into that menu and adjust the values based on previous calibration results.<br>
-Otherwise, they aren't meant to be another calibration menu! Only for viewing (Ex. reporting calibration results) and making backup/restore of the values.<br>
+Zero calibration can't be manually restored, but it only takes few seconds to adjust.<br>
+
+### Cold tip not showing ambient temperature
+Some amplifiers can introduce a small voltage offset that will translate into the cold tip reading 30-50°C higher than ambient temperature.<br>
+To fix that, enter the [Calibration menu](Readme_files/Operation.md#calibration), insert a completely cold tip, enter Settings, adjust Zero set calibration and save.<br>
+After that, the offset will be compensated and the cold temperature will be normal.<br>
+It's highly recommended to recalibrate after changing this value.<br>
 
 ### Other issues<br>
-After fully reading the documentaion, if you still have problems or doubts, please ask in the EEVblog thread:<br>
-https://www.eevblog.com/forum/reviews/stm32-oled-digital-soldering-station-for-t12-handle<br>
+After fully reading the documentation, if you still have problems or doubts, please ask in the EEVblog thread:<br>
+https://www.eevblog.com/forum/reviews/stm32-oled-digital-soldering-station-for-t12-handle.<br>
+
+### Donations
+If you liked the firmware, you can send me a beer with [PAYPAL](https://www.paypal.me/davidalfistas)<br>
+(Gin tonics, coffees and steaks are also accepted 🙂 )<br>
 
 ---
 
@@ -158,7 +166,7 @@ As long as the GPIO names are called the same way, no further changes are needed
 If you want to build your own, clone or download the source.<br>
 The source is stripped from ST own libraries and unnecesary stuff, only includes the very basic code owning to the project.<br>
 CubeMX will add the STM32 and CMSIS libraries automatically after a code generation.<br>
-Open the BOARDS folder, find your board (or take any to work with) and copy all the contents to the root of the project.<br>
+Open the [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder, find your board (or take any to work with) and copy all the contents to the root of the project.<br>
 Now you're ready to open STM32CUBE IDE and import the project.<br>
 Open the .ioc file,  make any small change, ex. take an unused pin and set is as GPIO_Input, then revert it to reset state.<br>
 This will trigger the code generation. Close saving changes and the code will be generated. And it's ready for building.<br>
@@ -187,13 +195,16 @@ Ensure these are present:<br>
 Click in the right arrow of the build button (Hammer icon), select Release, then click on the build button and should build right away.<br>
 <img src="/Readme_files/release.jpg?raw=true">
 
-Keep in mind that in 64KB devices the flash is almost full and will not fit unless optimization is set to "Optimize for size".<br>
-To debug MCUs where the flash space is unsufficient to store a unoptimized build, you can selectively disable build optimizations.<br>
+At some point, the firmware might not fit into the flash when compiling for debugging, as it'll skip optimizations, and use much more space.<br>
+In that case, you'll need to force some optimization level, starting with "Optimize for debug" (Og), and going to higher levels if still being too big (O1,O2,Osize).<br>
+The settings can be changed in project Properties / Build / Settings / MCU GCC Compiler / Optimizations.<br>
+However, when debugging, it's desirable to completely disable optimizations to see the program flow clearly.<br>
+If you had to enable any level of global optimizations, you can still selectively disable build optimizations for any function.<br>
 A line of code can be found at the start of main.h:<br>
 
   __attribute__((optimize("O0")))
 
-Copy that line before the function like this:<br>
+Copy that line before a function to disable optimization, like this:<br>
 
    __attribute__((optimize("O0"))) void ThisFunctionWillNotBeOptimized(...)
    

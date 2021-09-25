@@ -57,6 +57,18 @@ void update_NTC_menu(void){
   comboitem_Detect_low_res_beta->enabled = NTC_auto;
 }
 #endif
+
+void updateTemperatureUnit(void){
+  if(systemSettings.settings.tempUnit==mode_Farenheit){
+    editable_system_TempStep->inputData.endString="\260F";
+    editable_system_bigTempStep->inputData.endString="\260F";
+  }
+  else{
+    editable_system_TempStep->inputData.endString="\260C";
+    editable_system_bigTempStep->inputData.endString="\260C";
+  }
+}
+
 //=========================================================
 #ifdef ENABLE_DEBUG_SCREEN
 static void * getDbgScr() {
@@ -85,14 +97,7 @@ static void * getTmpUnit() {
 }
 static void setTmpUnit(uint32_t *val) {
   setSystemTempUnit(*val);
-  if(systemSettings.settings.tempUnit==mode_Farenheit){
-    editable_system_TempStep->inputData.endString="\260F";
-    editable_system_bigTempStep->inputData.endString="\260F";
-  }
-  else{
-    editable_system_TempStep->inputData.endString="\260C";
-    editable_system_bigTempStep->inputData.endString="\260C";
-  }
+  updateTemperatureUnit();
 }
 //=========================================================
 static void * getTmpStep() {
@@ -156,11 +161,11 @@ static void setdimMode(uint32_t *val) {
 }
 //=========================================================
 static void * getDimTimeout() {
-  temp = systemSettings.settings.dim_Timeout;
+  temp = systemSettings.settings.dim_Timeout/1000;
   return &temp;
 }
 static void setDimTimeout(uint32_t *val) {
-  systemSettings.settings.dim_Timeout = * val;
+  systemSettings.settings.dim_Timeout = *val*1000;
 }
 //=========================================================
 static void * getDimTurnOff() {
@@ -292,15 +297,6 @@ static void system_onEnter(screen_t *scr){
   if(scr==&Screen_settings){
     comboResetIndex(Screen_system.widgets);
   }
-  if(systemSettings.settings.tempUnit==mode_Farenheit){
-    editable_system_TempStep->inputData.endString="\260F";
-    editable_system_bigTempStep->inputData.endString="\260F";
-  }
-  else{
-    editable_system_TempStep->inputData.endString="\260C";
-    editable_system_bigTempStep->inputData.endString="\260C";
-
-  }
   profile=systemSettings.settings.currentProfile;
 }
 
@@ -392,7 +388,7 @@ static void system_create(screen_t *scr){
   edit->big_step = 10;
   edit->step = 5;
   edit->setData = (void (*)(void *))&setDimTimeout;
-  edit->max_value = 250;
+  edit->max_value = 600;
   edit->min_value = 5;
 
   //  [ Oled dim turn off Widget ]
@@ -615,6 +611,8 @@ static void system_create(screen_t *scr){
   newComboScreen(w, SWSTRING, -1, NULL);
   newComboAction(w, HWSTRING, &hwAction, NULL);
   newComboScreen(w, strings[lang]._BACK, screen_settings, NULL);
+
+  updateTemperatureUnit();
 }
 
 int system_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state){
