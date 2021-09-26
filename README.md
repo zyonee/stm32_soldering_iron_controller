@@ -48,10 +48,10 @@ Currently supported controllers (Click to download the latest build):<br>
 * [**Quicko T12-072**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F072/STM32SolderingStation.bin): For STM32F072 variant.
 * [**Quicko T12-103**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F103/STM32SolderingStation.bin): For STM32F103 variant.
 * [**KSGER v1.5**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv1.5%5D/STM32SolderingStation.bin): Profile for STM32F103 (There are no other known CPUs used in this board).
-* [**KSGER v2.x**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
+* [**KSGER v2.x**, **JCD T12**, **QUECOO T12-955**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
 * [**KSGER v3.x**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv3%5D/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
-* [**JCD T12**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32SolderingStation.bin): Different board layout, but it's the same as the KSGER v2.
 
+For KSGER v2/v3: As long as use the correct firmware, any STM32 variant (101/102/103/C8/R8/CB/RB) will work.<br>
 
 Actually, the easiest way to quickly identify your KGSER version is by looking at the Oled screen connection:<br>
 - **4 pin** (I2C) = v2.x<br>
@@ -74,8 +74,8 @@ First, make sure to read the [Operating instructions](Readme_files/Operation.md)
 You can check the [commit history](https://github.com/deividAlfa/stm32_soldering_iron_controller/commits/master) to see what have been changed between builds.
 
 ### Backing up the original firmware
-The original firmwares are available here: [[KSGER]](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS/KSGER/Original_FW)  [[Quicko]](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS/Quicko/Original_FW)<br>
-Some KSGER firmwares require an activation code which can be generated [[HERE]](http://t12.omegahg.com/keygen.htm)  [[Alternative link]](https://raw.githack.com/deividAlfa/stm32_soldering_iron_controller/master/[BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS)/KSGER/Original_FW/Gen/gen.htm)<br>
+The original firmwares are available [[HERE]](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/Original_FW)<br>
+Some KSGER firmwares require an activation code which can be generated [[HERE]](http://t12.omegahg.com/keygen.htm)  [[Alternative link]](https://rawcdn.githack.com/deividAlfa/stm32_soldering_iron_controller/60457394b0b8e8db893a42d745f81979e225e161/Original_FW/KSGER/Gen/gen.htm)<br>
 
 Be warned, usually the MCU will be read-protected, so you won't be able to read its contents, only erase it.<br> 
 The simplest way to not loose the original FW is actually to buy a new MCU, replace it, and store the original MCU in a safe place.<br>
