@@ -47,9 +47,9 @@ The [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/
 Currently supported controllers (Click to download the latest build):<br>
 * [**Quicko T12-072**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F072/STM32SolderingStation.bin): For STM32F072 variant.
 * [**Quicko T12-103**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F103/STM32SolderingStation.bin): For STM32F103 variant.
-* [**KSGER v1.5**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv1.5%5D/STM32SolderingStation.bin): Profile for STM32F103 (There are no other known CPUs used in this board).
-* [**KSGER v2.x**, **JCD T12**, **QUECOO T12-955**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
-* [**KSGER v3.x**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv3%5D/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
+* [**KSGER v1.5**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv1.5%5D/STM32F103/STM32SolderingStation.bin): Profile for STM32F103 (There are no other known CPUs used in this board).
+* [**KSGER v2.x**, **JCD T12**, **QUECOO T12-955**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32F101/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
+* [**KSGER v3.x**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv3%5D/STM32F101/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
 
 For KSGER v2/v3: As long as use the correct firmware, any STM32 variant (101/102/103/C8/R8/CB/RB) will work.<br>
 
@@ -75,7 +75,7 @@ You can check the [commit history](https://github.com/deividAlfa/stm32_soldering
 
 ### Backing up the original firmware
 The original firmwares are available [[HERE]](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/Original_FW)<br>
-Some KSGER firmwares require an activation code which can be generated [[HERE]](http://t12.omegahg.com/keygen.htm)  [[Alternative link]](https://rawcdn.githack.com/deividAlfa/stm32_soldering_iron_controller/60457394b0b8e8db893a42d745f81979e225e161/Original_FW/KSGER/Gen/gen.htm)<br>
+Some KSGER firmwares require an activation code which can be generated [[HERE]](http://t12.omegahg.com/keygen.htm)  [[Alternative link]](https://rawcdn.githack.com/deividAlfa/stm32_soldering_iron_controller/3f48a9c4c9586f89503ce763b1c6a73b9b73b55a/Original_FW/KSGER/Gen/gen.htm)<br>
 
 Be warned, usually the MCU will be read-protected, so you won't be able to read its contents, only erase it.<br> 
 The simplest way to not loose the original FW is actually to buy a new MCU, replace it, and store the original MCU in a safe place.<br>
@@ -166,29 +166,33 @@ As long as the GPIO names are called the same way, no further changes are needed
 If you want to build your own, clone or download the source.<br>
 The source is stripped from ST own libraries and unnecesary stuff, only includes the very basic code owning to the project.<br>
 CubeMX will add the STM32 and CMSIS libraries automatically after a code generation.<br>
-Open the [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder, find your board (or take any to work with) and copy all the contents to the root of the project.<br>
-Now you're ready to open STM32CUBE IDE and import the project.<br>
-Open the .ioc file,  make any small change, ex. take an unused pin and set is as GPIO_Input, then revert it to reset state.<br>
-This will trigger the code generation. Close saving changes and the code will be generated. And it's ready for building.<br>
-CubeMX should care of adding the new folders to the search path, if it fails follow this steps.<br>
-Right click on project -> Properties -> C/C++ Build -> Settings ->  Tool Settings -> MCU GCC Compiler -> Include paths<br>
-On the upper menu, Configuration, Select [All configurations]<br>
-Click on Add... Select Workspace and select these folder while holding Control key:<br>
-Ensure these are present:<br>
+Open the [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder, find your board (or take any to work with) and copy all the contents to the root of the project.<br><br>
+Open STM32CUBE IDE, click on Import/Existing project and select the project folder.<br>
+You'll see various projects. That's because of the BOARDS folder, ignore them and select only the project in the root of the folder.<br>
+After that, double-click on [STM32SolderingStation.ioc] file, CubeMX will open, then click on generate code:<br>
+<img src="/Readme_files/gen.png?raw=true"><br><br>
+After this, it'll be ready for compiling, click in the right arrow of the build button (Hammer icon) and select [Release]:<br>
+<img src="/Readme_files/release.jpg?raw=true"><br><br>
+After a while you'll have the compiled bin/hex files inside Release folder.<br><br>
+If the build fails with files no found or undeclared functions errors, check the Include search path:<br>
+Right click on project -> [Properties] -> [C/C++ Build] -> [Settings] ->  [Tool Settings] -> [MCU GCC Compiler] -> [Include paths]<br>
+Select [All configurations] in [Configuration] dropdown menu.<br>
+Now ensure these are present:<br>
 
-      /Core/Inc
-      /Core/Src
-      /Drivers/generalIO
-      /Drivers/graphics
-      /Drivers/graphics/gui
-      /Drivers/graphics/gui/screens    
-      /Drivers/graphics/u8g2
-      /Drivers/STM32Fxxx_HAL_Driver/Inc
-      /Drivers/STM32Fxxx_HAL_Driver/Inc/Legacy
-      /Drivers/CMSIS/Device/ST/STM32Fxxx/Include
-      /Drivers/CMSIS/Include
-      
-(STM32Fxxx matches your current mcu family, ex. STM32F0xx, STM32F1xx)<br>
+      /Core/Inc<br>
+      /Core/Src<br>
+      /Drivers/generalIO<br>
+      /Drivers/graphics<br>
+      /Drivers/graphics/gui<br>
+      /Drivers/graphics/gui/screens<br>
+      /Drivers/graphics/u8g2<br>
+      /Drivers/STM32Fxxx_HAL_Driver/Inc<br>
+      /Drivers/STM32Fxxx_HAL_Driver/Inc/Legacy<br>
+      /Drivers/CMSIS/Device/ST/STM32Fxxx/Include<br>
+      /Drivers/CMSIS/Include<br>
+(STM32Fxxx matches your current mcu family, ex. STM32F0xx, STM32F1xx)<br><br>
+If any is missing, click on Add... Select Workspace and select the missing ones.<br>
+You can make multiple selection  while holding the Control key:<br>      
 <img src="/Readme_files/Includes.jpg?raw=true">
 
 
