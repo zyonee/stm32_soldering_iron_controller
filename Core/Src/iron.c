@@ -62,7 +62,7 @@ void ironInit(TIM_HandleTypeDef *delaytimer, TIM_HandleTypeDef *pwmtimer, uint32
   Iron.Pwm_Timer      = pwmtimer;
   Iron.Read_Timer    = delaytimer;
   Iron.Pwm_Channel    = pwmchannel;
-  Iron.Error.Flags    = _NOERROR;
+  Iron.Error.Flags    = FLAG_NOERROR;
 
   if(systemSettings.settings.WakeInputMode == mode_shake){
     setCurrentMode(systemSettings.settings.initMode);
@@ -89,7 +89,7 @@ void handleIron(void) {
   readTipTemperatureCompensated(new_reading, read_average, mode_Celsius);     // Update readings
 
   if(!Iron.Error.safeMode){
-    if( (systemSettings.setupMode==enable) || systemSettings.settings.NotInitialized || systemSettings.Profile.NotInitialized!=initialized ||
+    if( (systemSettings.setupMode==enable) || systemSettings.settings.state!=initialized || systemSettings.Profile.state!=initialized ||
         (systemSettings.Profile.ID != systemSettings.settings.currentProfile) || (systemSettings.settings.currentProfile>profile_C210)){
 
       Iron.Error.safeMode=1;
@@ -225,6 +225,7 @@ void setSystemTempUnit(bool unit){
   }
 
   systemSettings.settings.tempUnit = unit;
+  systemSettings.settings.guiTempDenoise  = round_10(TempConversion(systemSettings.settings.guiTempDenoise,unit,0));
   Iron.UserSetTemperature = round_10(TempConversion(Iron.UserSetTemperature,unit,0));
   setCurrentMode(Iron.CurrentMode);     // Reload temps
 
@@ -576,19 +577,14 @@ void checkIronError(void){
   Err.V_low = (getSupplyVoltage_v_x10() < systemSettings.settings.lvp);
   #endif
   Err.noIron = (TIP.last_raw>systemSettings.Profile.noIronValue);
-/*
-  if(current_screen==&Screen_boot || CurrentTime<1000){                               // Don't check sensor errors during first second or in boot screen, wait for readings need to get stable
-    Err.Flags &= _SAFE_MODE;
-  }
-*/
   if(Err.Flags){
-    Iron.Error.Flags = Err.Flags | (Iron.Error.Flags & _ACTIVE);
+    Iron.Error.Flags = Err.Flags | (Iron.Error.Flags & FLAG_ACTIVE);
     Iron.LastErrorTime = CurrentTime;
     if(!Iron.Error.active){
-      if(Err.Flags!=_NO_IRON){                                                        // Avoid alarm if only the tip is removed
+      if(Err.Flags!=FLAG_NO_IRON){                                                        // Avoid alarm if only the tip is removed
         buzzer_alarm_start();
       }
-      Iron.beforeErrorMode = Iron.CurrentMode;
+      Iron.lastMode = Iron.CurrentMode;
       Iron.Error.active = 1;
       setCurrentMode(mode_sleep);
       Iron.Pwm_Out = 0;
@@ -597,7 +593,7 @@ void checkIronError(void){
     }
   }
   else if (Iron.Error.active && !Err.Flags){                                                // If global flag set, but no errors
-    if((CurrentTime-Iron.LastErrorTime)>systemSettings.Profile.errorTimeout){           // Check enough time has passed
+    if((CurrentTime-Iron.LastErrorTime)>systemSettings.Profile.errorTimeout){           		// Check if enough time has passed
       Iron.Error.Flags = 0;
       buzzer_alarm_stop();
       if(systemSettings.Profile.errorResumeMode==error_sleep){
@@ -607,12 +603,12 @@ void checkIronError(void){
         setCurrentMode(mode_run);
       }
       else{
-        setCurrentMode(Iron.beforeErrorMode);
+        setCurrentMode(Iron.lastMode);
       }
     }
   }
   else{
-    Iron.Error.Flags=_NOERROR;
+    Iron.Error.Flags=FLAG_NOERROR;
   }
 }
 
@@ -623,8 +619,8 @@ bool GetIronError(void){
 
 void setSafeMode(bool mode){
   __disable_irq();
-  if(mode==disable && Iron.Error.Flags==(_ACTIVE |_SAFE_MODE)){                             // If only failsafe was active? (This should only happen because it was on first init screen)
-    Iron.Error.Flags = _NOERROR;
+  if(mode==disable && Iron.Error.Flags==(FLAG_ACTIVE |FLAG_SAFE_MODE)){                             // If only failsafe was active? (This should only happen because it was on first init screen)
+    Iron.Error.Flags = FLAG_NOERROR;
     setCurrentMode(mode_run);
   }
   else{

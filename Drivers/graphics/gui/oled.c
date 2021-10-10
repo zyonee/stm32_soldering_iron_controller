@@ -45,6 +45,8 @@ void oled_addScreen(screen_t *screen, uint8_t index){
 void oled_draw() {
 
   if(oled.status!=oled_idle) { return; }                // If Oled busy, skip update
+
+  current_time = HAL_GetTick();
   if(current_screen->draw(current_screen)){
     update_display();                                   // Only update if something was drawn
   }
@@ -55,11 +57,11 @@ void oled_update() {
     current_time = HAL_GetTick();
     current_screen->update(current_screen);
   }
-  current_time = HAL_GetTick();
   oled_draw();
 }
 
 void oled_init(RE_Rotation_t (*GetData)(RE_State_t*), RE_State_t *State) {
+  screen_timer = current_time = HAL_GetTick();
   RE_State = State;
   RE_GetData = GetData;
   screen_t *scr = screens;

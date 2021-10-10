@@ -12,10 +12,13 @@
 #include "pid.h"
 #include "board.h"
 
+#define SWSTRING          "SW: 21-10-09"                            // Software version reported in settings screen
+#define SETTINGS_VERSION  14                                        // Change this if you change the settings/profile struct to prevent getting out of sync
+#define LANGUAGE_COUNT    5                                         // Number of languages
 #define ProfileSize       3                                         // Number of profiles
 #define TipSize           20                                        // Number of tips for each profile
-#define TipCharSize       5                                         // String size for each tip name (Including null terminator)
-#define _BLANK_TIP        "    "
+#define TipCharSize       5                                         // String size for each tip name (Including null termination)
+#define _BLANK_TIP        "    "                                    // Empty tip name, 4 spaces. Defined here for quick updating if TipCharSize is modified.
 
 #ifndef PROFILE_VALUES
 
@@ -54,12 +57,6 @@
 
 #endif
 
-#define LANGUAGE_COUNT    4
-//#define SWSTRING        "SW: v1.10"                               // For releases
-#define SWSTRING          "SW: 21-09-29"                            // For git
-#define SETTINGS_VERSION  13                                        // Change this if you change the struct below to prevent people getting out of sync
-#define StoreSize         2                                         // In KB
-#define FLASH_ADDR        (0x8000000 + ((FLASH_SZ-StoreSize)*1024)) // Last 2KB flash (Minimum erase size, page size=2KB)
 
 enum{
   mode_shake              = 0,
@@ -129,6 +126,8 @@ enum{
   lang_russian             = 1,
   lang_swedish             = 2,
   lang_german              = 3,
+  lang_turkish             = 4,
+
 
   dim_off                  = 0,
   dim_sleep                = 1,
@@ -138,7 +137,7 @@ enum{
   error_run                = 1,
   error_resume             = 2,
 
-};
+}system_types;
 
 
 typedef struct{
@@ -159,7 +158,7 @@ typedef struct{
 }tipData_t;
 
 typedef struct{
-  uint8_t       NotInitialized;
+  uint8_t       state;                // Always 0xFF if flash is erased
   uint8_t       ID;
   uint8_t       impedance;
   uint8_t       tempUnit;
@@ -188,7 +187,7 @@ typedef struct{
 }profile_t;
 
 typedef struct{
-  uint8_t       NotInitialized;                                     // Always 1 if flash is erased
+  uint8_t       state;              // Always 0xFF if flash is erased
   uint8_t       language;
   uint8_t       contrast;
   uint8_t       OledOffset;
@@ -199,10 +198,11 @@ typedef struct{
   uint8_t       initMode;
   uint8_t       tempStep;
   uint8_t       tempBigStep;
+  uint8_t       guiTempDenoise;
   uint8_t       tempUnit;
   uint8_t       activeDetection;
   uint8_t       buzzerMode;
-  uint8_t       buttonWakeMode;                                     // 0=Nothing, 1= standby, 2= sleep,  3= both
+  uint8_t       buttonWakeMode;
   uint8_t       shakeWakeMode;
   uint8_t       shakeFiltering;
   uint8_t       WakeInputMode;
@@ -222,10 +222,10 @@ typedef struct{
   uint16_t      NTC_detect_high_res_beta;
   uint16_t      NTC_detect_low_res_beta;
   uint32_t      dim_Timeout;
-  uint32_t      version;                                            // Used to track if a reset is needed on firmware upgrade
+  uint32_t      version;            // Used to track if a reset is needed on firmware upgrade
 }settings_t;
 
-typedef __attribute__((aligned(4)))  struct{
+__attribute__((aligned(4))) typedef struct{
   settings_t    settings;
   uint32_t      settingsChecksum;
   profile_t     Profile;
@@ -235,7 +235,7 @@ typedef __attribute__((aligned(4)))  struct{
   uint8_t       isSaving;
 }systemSettings_t;
 
-typedef __attribute__((aligned(4)))  struct{
+__attribute__((aligned(4))) typedef struct{
   profile_t     Profile[ProfileSize];
   uint32_t      ProfileChecksum[ProfileSize];
   settings_t    settings;
@@ -243,7 +243,6 @@ typedef __attribute__((aligned(4)))  struct{
 }flashSettings_t;
 
 extern systemSettings_t systemSettings;
-extern flashSettings_t* flashSettings;
 
 void Oled_error_init(void);
 void checkSettings(void);

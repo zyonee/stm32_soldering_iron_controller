@@ -187,18 +187,8 @@ int boot_screen_processInput(screen_t * scr, RE_Rotation_t input, RE_State_t *st
     case 0:
       if(current_time - screen_timer > SPLASH_TIMEOUT){                                               // After splash timeout
         if(!systemSettings.setupMode){                                                                // If not in setup mode
-          __disable_irq();
-          TIP.EMA_of_Input =  TIP.last_avg = TIP.last_raw;                                            // Now override filter values with last raw reading
-          #ifdef USE_NTC
-          NTC.EMA_of_Input = NTC.last_avg = NTC.last_raw;
-          #endif
-          #ifdef USE_VIN
-          VIN.EMA_of_Input = VIN.last_avg = VIN.last_raw;
-          #endif
-          readColdJunctionSensorTemp_x10(new_reading, systemSettings.settings.tempUnit);              // Refresh the temperatures to show current temperature from the beginning
-          readTipTemperatureCompensated(new_reading, read_average, systemSettings.settings.tempUnit);
-          resetIronError();                                                                           // Force resetting the timeout of any error (This won't clear errors if still detected)
-          __enable_irq();
+          ADC_Reset_measures();                                                                       // Reset the averages, show current values to avoid filtering delay at startup
+          resetIronError();                                                                           // Force timeout of any error (This won't clear errors if still detected)
           return screen_main;                                                                         // Go to main screen
         }
         widgetEnable(Widget_lang);                                                                    // In setup mode, enable widgets
@@ -222,7 +212,7 @@ int boot_screen_processInput(screen_t * scr, RE_Rotation_t input, RE_State_t *st
 void boot_screen_init(screen_t * scr){
   default_init(scr);
   profile=systemSettings.settings.currentProfile;
-  if( (systemSettings.settings.NotInitialized!=initialized) || (profile>profile_C210) ){
+  if( (systemSettings.settings.state!=initialized) || (profile>profile_C210) ){
     profile=profile_T12;
     setSafeMode(enable);
     systemSettings.setupMode=enable;
@@ -240,7 +230,7 @@ void boot_screen_create(screen_t *scr){
   displayOnly_widget_t *dis;
   editable_widget_t *edit;
   lang = systemSettings.settings.language;
-  if(lang>LANGUAGE_COUNT-1){
+  if(lang>=LANGUAGE_COUNT){
     lang=lang_english;
   }
   current_lang = lang;
