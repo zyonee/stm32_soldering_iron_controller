@@ -18,7 +18,6 @@ static widget_t *Widget_profile;
 static widget_t *Widget_lang;
 static widget_t *Widget_ok;
 static uint8_t boot_step=0;
-static uint8_t current_lang = lang_english;
 
 // Credits: Jesus Vallejo  https://github.com/jesusvallejo/
 const uint8_t splashXBM[] = {
@@ -117,7 +116,7 @@ static void * getProfile() {
   temp = profile;
   return &temp;
 }
-static void setProfile(int32_t *val) {
+static void setProfile(uint32_t *val) {
   profile=*val;
 }
 //=========================================================
@@ -125,7 +124,6 @@ static void * getLanguage() {
   temp = systemSettings.settings.language;
   return &temp;
 }
-
 static void setLanguage(uint32_t *val) {
   lang = *val;
   systemSettings.settings.language=*val;
@@ -174,7 +172,7 @@ int boot_screen_processInput(screen_t * scr, RE_Rotation_t input, RE_State_t *st
   }
 
   if(input!=Rotate_Nothing){
-    refreshOledDim();
+    wakeOledDim();
   }
   handleOledDim();
 
@@ -185,7 +183,7 @@ int boot_screen_processInput(screen_t * scr, RE_Rotation_t input, RE_State_t *st
       setSafeMode(disable);                                                                           // Disable safe mode and exit
 
     case 0:
-      if(current_time - screen_timer > SPLASH_TIMEOUT){                                               // After splash timeout
+      if(checkScreenTimer(SPLASH_TIMEOUT)){                                                           // After splash timeout
         if(!systemSettings.setupMode){                                                                // If not in setup mode
           ADC_Reset_measures();                                                                       // Reset the averages, show current values to avoid filtering delay at startup
           resetIronError();                                                                           // Force timeout of any error (This won't clear errors if still detected)
@@ -221,7 +219,7 @@ void boot_screen_init(screen_t * scr){
   u8g2_DrawXBMP(&u8g2, 0, 0, splashXBM[0], splashXBM[1], &splashXBM[2]);
   scr->refresh = screen_Erased;
   setContrast(0);
-  refreshOledDim();
+  wakeOledDim();
 }
 
 
@@ -248,7 +246,6 @@ void boot_screen_create(screen_t *scr){
   edit->step = 1;
   edit->selectable.tab = 0;
   edit->setData = (void (*)(void *))&setProfile;
-  edit->max_value = ProfileSize-1;
   edit->options = profileStr;
   edit->numberOfOptions = ProfileSize;
   w->posX = 74;
@@ -269,7 +266,6 @@ void boot_screen_create(screen_t *scr){
   edit->step = 1;
   edit->selectable.tab = 1;
   edit->setData = (void (*)(void *))&setLanguage;
-  edit->max_value = LANGUAGE_COUNT-1;
   edit->options = Langs;
   edit->numberOfOptions = LANGUAGE_COUNT;
   w->posX = 74;

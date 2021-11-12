@@ -7,8 +7,8 @@
 #include "screen_common.h"
 
 int32_t temp;
-int16_t backupTemp, ambTemp;
-uint8_t status, profile, Selected_Tip, lang, backupMode;
+int16_t backupTemp;
+uint8_t status, profile, Selected_Tip, lang, backupMode, current_lang=lang_english;
 tipData_t backupTip;
 
 struct{
@@ -18,12 +18,7 @@ struct{
   uint32_t stepTimer;
 }dim;
 
-char *tipName;
-bool disableTipCopy;
-bool newTip;
-#ifdef ENABLE_DEBUG_SCREEN
-bool dbg_scr_en;
-#endif
+uint8_t newTip;
 
 plotData_t plot;
 
@@ -72,11 +67,10 @@ uint8_t update_GUI_Timer(void){
 
 int autoReturn_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state){
   updatePlot();
-  refreshOledDim();
+  wakeOledDim();
   handleOledDim();
-  if(input!=Rotate_Nothing){
-    screen_timer=current_time;
-  }
+  updateScreenTimer(input);
+
   if(input==Rotate_Decrement_while_click){
     if(scr==&Screen_settings){
       return screen_main;
@@ -100,19 +94,34 @@ int autoReturn_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
     }
   }
 
-  if((current_time-screen_timer)>15000){
+  if(checkScreenTimer(15000)){
     return screen_main;
   }
   return default_screenProcessInput(scr, input, state);
 }
 
+void resetScreenTimer(void){
+  screen_timer=current_time;
+}
+
+void updateScreenTimer(RE_Rotation_t input){
+  if(input!=Rotate_Nothing){
+    screen_timer=current_time;
+  }
+}
+uint8_t checkScreenTimer(uint32_t time){
+  if((current_time-screen_timer)>time){
+    return 1;
+  }
+  return 0;
+}
 void restore_contrast(void){
   if(getContrast() != systemSettings.settings.contrast){
     setContrast(systemSettings.settings.contrast);
   }
 }
 
-void refreshOledDim(void){
+void wakeOledDim(void){
   dim.timer = current_time;
   if(dim.step<=0 && getContrast()<systemSettings.settings.contrast ){
     if(getOledPower()==disable){
@@ -126,7 +135,7 @@ void refreshOledDim(void){
 void handleOledDim(void){
   uint16_t contrast=getContrast();
   if(!getOledPower() && getCurrentMode()>mode_sleep){                   // If screen turned off and not in sleep mode, wake it.
-    refreshOledDim();                                                   // (Something woke the station from sleep)
+    wakeOledDim();                                                   		// (Something woke the station from sleep)
   }
 
   if(dim.step==0){                                                      // If idle
@@ -164,6 +173,3 @@ void handleOledDim(void){
   }
 }
 
-void updateAmbientTemp(void){
-  ambTemp = (last_NTC_C+5)/10;
-}

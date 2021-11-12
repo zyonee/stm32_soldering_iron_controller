@@ -19,53 +19,32 @@
 #endif
 
 const settings_t defaultSettings = {
-  .version             = SETTINGS_VERSION,
-  .contrast            = 255,
-  .dim_mode            = dim_sleep,
-  .dim_Timeout         = 10000,                // ms
-  .dim_inSleep         = enable,
-  .OledOffset          = OLED_OFFSET,
-  .guiUpdateDelay      = 200,                  //ms
-  .guiTempDenoise      = 5,                    // ±5°C
-  .tempUnit            = mode_Celsius,
-  .tempStep            = 5,                    // 5º steps
-  .tempBigStep         = 20,                   // 20º big steps
-  .activeDetection     = true,
-  .saveSettingsDelay   = 5,                    // 5s
-  .lvp                 = 110,                  // 11.0V Low voltage
-  .currentProfile      = profile_None,
-  .initMode            = mode_sleep,
-  .buzzerMode          = enable,
-  .buttonWakeMode      = wake_all,
-  .shakeWakeMode       = wake_all,
-  .shakeFiltering      = enable,
-  .WakeInputMode       = mode_shake,
-  .StandMode           = mode_sleep,
-  .EncoderMode         = RE_Mode_One,
-  .debugEnabled        = disable,
-  .language            = lang_english,
-  .state               = initialized,
-
-  #ifdef USE_NTC
-  .enableNTC           = 1,
-    #ifdef PULLUP
-    .Pullup            = 1,
-    #elif defined PULLDOWN
-    .Pullup            = 0,
-    #else
-    #error NO PULL MODE DEFINED
-    #endif
-  .NTC_detect          = 0,
-  .NTC_detect_high_res = 1000,   // 100.0K
-  .NTC_detect_low_res  = 100,     // 10.0K
-  .NTC_Beta            = NTC_BETA,
-  .NTC_res             = NTC_RES/100,
-  .Pull_res            = PULL_RES/100,
-  .NTC_detect_high_res_beta = NTC_BETA,
-  .NTC_detect_low_res_beta  = NTC_BETA,
-  #else
-  .enableNTC           = 0,
-  #endif
+  .version            = (~((uint32_t)SETTINGS_VERSION<<16)&0xFFFF0000) | SETTINGS_VERSION,  // Higher 16bit is 1s complement to make detection stronger against padding/endianness
+  .contrast           = 255,
+  .dim_mode           = dim_sleep,
+  .dim_Timeout        = 10000,                // ms
+  .dim_inSleep        = enable,
+  .OledOffset         = OLED_OFFSET,
+  .guiUpdateDelay     = 200,                  //ms
+  .guiTempDenoise     = 5,                    // ±5°C
+  .tempUnit           = mode_Celsius,
+  .tempStep           = 5,                    // 5º steps
+  .tempBigStep        = 20,                   // 20º big steps
+  .activeDetection    = true,
+  .saveSettingsDelay  = 5,                    // 5s
+  .lvp                = 110,                  // 11.0V Low voltage
+  .currentProfile     = profile_None,
+  .initMode           = mode_run,
+  .buzzerMode         = enable,
+  .buttonWakeMode     = wake_all,
+  .shakeWakeMode      = wake_all,
+  .shakeFiltering     = enable,
+  .WakeInputMode      = mode_shake,
+  .StandMode          = mode_sleep,
+  .EncoderMode        = RE_Mode_Forward,
+  .debugEnabled       = disable,
+  .language           = lang_english,
+  .state              = initialized,
 };
 
 __attribute__((section(".settings"))) flashSettings_t flashSettings;
@@ -106,7 +85,9 @@ void checkSettings(void){
         saveSettings(wipeProfiles);
         break;
       case reset_Profile:
+        __disable_irq();
         resetCurrentProfile();
+        __enable_irq();
         saveSettings(keepProfiles);
         break;
       case reset_Settings:
@@ -271,10 +252,12 @@ void saveSettings(uint8_t mode){
 
 void restoreSettings() {
 #ifdef NOSAVESETTINGS                                                 // Stop erasing the flash while in debug mode
+  __disable_irq();
   resetSystemSettings();                                              // TODO not tested with the new profile system
   systemSettings.settings.currentProfile = profile_T12;
   resetCurrentProfile();
   setupPID(systemSettings.Profile.tip[0].PID;);
+  __enable_irq();
   return;
 #endif
 
@@ -285,14 +268,18 @@ void restoreSettings() {
   else{
     Button_reset();
   }
-  systemSettings.settings = flashSettings.settings;
-  systemSettings.settingsChecksum = flashSettings.settingsChecksum;
 
-  if(systemSettings.settings.version!=SETTINGS_VERSION){    // Silent reset
+  if(flashSettings.settings.version!=defaultSettings.version){    // Silent reset if version mismatch
     resetSystemSettings();
     saveSettings(wipeProfiles);
   }
-  else if(ChecksumSettings(&systemSettings.settings)!=systemSettings.settingsChecksum){   // Show error msg
+  else{
+    systemSettings.settings = flashSettings.settings;
+    systemSettings.settingsChecksum = flashSettings.settingsChecksum;
+  }
+
+
+  if(ChecksumSettings(&systemSettings.settings)!=systemSettings.settingsChecksum){   // Show error message if bad checksum
     checksumError(reset_All);
   }
 
@@ -324,7 +311,6 @@ void resetCurrentProfile(void){
 #ifdef NOSAVESETTINGS
   systemSettings.settings.currentProfile=profile_T12; /// Force T12 when debugging. TODO this is not tested with the profiles update!
 #endif
-  __disable_irq();
     if(systemSettings.settings.currentProfile==profile_T12){
     systemSettings.Profile.ID = profile_T12;
 
@@ -482,6 +468,27 @@ void resetCurrentProfile(void){
   systemSettings.Profile.tipFilter.step             = -3;   // -5% less everytime the reading diff exceeds threshold_limit and the counter is greater than count_limit
   systemSettings.Profile.tipFilter.reset_threshold  = 600;  // Any diff over 500 reset the filter (Tip removed or connected)
 
+  #ifdef USE_NTC
+  systemSettings.Profile.ntc.enabled                = enable;
+  #ifdef PULLUP
+  systemSettings.Profile.ntc.pullup                 = 1;
+  #elif defined PULLDOWN
+  systemSettings.Profile.ntc.pullup                 = 0;
+  #else
+  #error NO PULL MODE DEFINED
+  #endif
+  systemSettings.Profile.ntc.detection              = 0;
+  systemSettings.Profile.ntc.NTC_res                = NTC_RES/100;
+  systemSettings.Profile.ntc.NTC_beta               = NTC_BETA;
+  systemSettings.Profile.ntc.high_NTC_res           = 1000;           // 100.0K
+  systemSettings.Profile.ntc.low_NTC_res            = 100;            // 10.0K
+  systemSettings.Profile.ntc.high_NTC_beta          = NTC_BETA;
+  systemSettings.Profile.ntc.low_NTC_beta           = NTC_BETA;
+  systemSettings.Profile.ntc.pull_res               = PULL_RES/100;
+  #else
+  systemSettings.Profile.ntc.enabled                = 0;
+  #endif
+
   systemSettings.Profile.errorTimeout               = 100;                    // ms
   systemSettings.Profile.errorResumeMode            = error_resume;
   systemSettings.Profile.sleepTimeout               = (uint32_t)5*60000;      // ms
@@ -496,8 +503,7 @@ void resetCurrentProfile(void){
   systemSettings.Profile.readPeriod                 = (200*200)-1;             // 200ms * 200  because timer period is 5us
   systemSettings.Profile.readDelay                  = (20*200)-1;              // 20ms (Also uses 5us clock)
   systemSettings.Profile.tempUnit                   = mode_Celsius;
-  systemSettings.Profile.state             = initialized;
-  __enable_irq();
+  systemSettings.Profile.state                      = initialized;
 }
 
 void loadProfile(uint8_t profile){
@@ -507,16 +513,21 @@ void loadProfile(uint8_t profile){
   systemSettings.settings.currentProfile=profile;
   if(profile==profile_None){                                                    // If profile not initialized yet, use T12 values until the system is configured
     systemSettings.settings.currentProfile=profile_T12;                         // Force T12 profile
+    __disable_irq();
     resetCurrentProfile();                                                      // Load data
-    systemSettings.settings.currentProfile=profile_None;                        // Revert to none
+    __enable_irq();
+    systemSettings.settings.currentProfile=profile_None;                        // Revert to none to trigger setup screen
   }
-  else if(profile<=profile_C210){
-    systemSettings.Profile = flashSettings.Profile[profile];
-    systemSettings.ProfileChecksum = flashSettings.ProfileChecksum[profile];
-
-    if(systemSettings.Profile.state!=initialized){
-      resetCurrentProfile();
+  else if(profile<=profile_C210){                                               // If valid profile
+    if(flashSettings.Profile[profile].state!=initialized){                      // If flash profile not initialized
+      __disable_irq();
+      resetCurrentProfile();                                                    // Load defaults
+      __enable_irq();
       systemSettings.ProfileChecksum = ChecksumProfile(&systemSettings.Profile);
+    }
+    else{
+      systemSettings.Profile = flashSettings.Profile[profile];
+      systemSettings.ProfileChecksum = flashSettings.ProfileChecksum[profile];
     }
 
     // Calculate data checksum and compare with stored checksum, also ensure the stored ID is the same as the requested profile
@@ -525,17 +536,18 @@ void loadProfile(uint8_t profile){
       checksumError(reset_Profile);
       __disable_irq();
     }
+    setSystemTempUnit(systemSettings.settings.tempUnit);                        // Ensure the profile uses the same temperature unit as the system
     setUserTemperature(systemSettings.Profile.UserSetTemperature);
     setCurrentTip(systemSettings.Profile.currentTip);
     TIP.filter=systemSettings.Profile.tipFilter;
     Iron.updatePwm=1;
+
   }
   else{
     Error_Handler();
   }
   if(systemSettings.settings.tempUnit != systemSettings.Profile.tempUnit){
     setSystemTempUnit(systemSettings.settings.tempUnit);
-    systemSettings.Profile.tempUnit = systemSettings.settings.tempUnit;
   }
   __enable_irq();
 }
@@ -559,11 +571,19 @@ void Flash_error(void){
 void checksumError(uint8_t mode){
   Oled_error_init();
   putStrAligned("BAD CHECKSUM!", 0, align_center);
-  putStrAligned("RESTORING...", 30, align_center);
+  putStrAligned("RESTORING THE", 20, align_center);
+  if(mode==reset_Profile){
+    putStrAligned("PROFILE", 36, align_center);
+  }
+  else{
+    putStrAligned("SYSTEM", 36, align_center);
+  }
   update_display();
   ErrCountDown(3,117,50);
   if(mode==reset_Profile){
+    __disable_irq();
     resetCurrentProfile();
+    __enable_irq();
     saveSettings(keepProfiles);
   }
   else{

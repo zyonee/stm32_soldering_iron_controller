@@ -190,20 +190,18 @@ int debug_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
 
   update=update_GUI_Timer();
   update_draw |= update;
+  updatePlot();
   updatePIDplot();
 
-  refreshOledDim();                                         // Prevent display dim
+  wakeOledDim();                                         // Prevent display dim
   handleOledDim();
+  updateScreenTimer(input);
   setCurrentMode(mode_run);                                 // Prevent mode timeout
-
-  if(input!=Rotate_Nothing){
-    screen_timer=current_time;
-  }
 
   if(input==LongClick){
     return screen_main;
   }
-  if((current_time-screen_timer)>300000){   // 5 min timeout
+  if(checkScreenTimer(300000)){   // 5 min timeout
     setCurrentMode(mode_sleep);
     return screen_main;
   }
@@ -211,10 +209,9 @@ int debug_ProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
     if(scr==&Screen_debug){
       return screen_pid_debug;
     }
-    else if(scr==&Screen_pid_debug){
+    else{
       return screen_debug;
     }
-    return -1;
   }
   else if(input==Rotate_Decrement_while_click){
     return screen_settings;
@@ -243,6 +240,7 @@ static void debug_onEnter(screen_t *scr){
 
   editable_widget_t *edit = extractEditablePartFromWidget(widget_setPoint);
   displayOnly_widget_t *dis = extractDisplayPartFromWidget(widget_Temp);
+
 
   if(systemSettings.settings.tempUnit==mode_Celsius){
     if(scr!=&Screen_debug){

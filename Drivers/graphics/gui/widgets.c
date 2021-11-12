@@ -751,20 +751,6 @@ uint8_t default_widgetDraw(widget_t *w) {
   return refresh;
 }
 
-
-
-uint8_t comboItemToIndex(widget_t *w, comboBox_item_t *item) {
-  if(!w || !item){ return 0; }
-  uint8_t index = 0;
-  comboBox_item_t *i = ((comboBox_widget_t*)w->content)->first;
-  while(i && i != item) {
-    i = i->next_item;
-    if(i->enabled)
-      ++ index;
-  }
-  return index;
-}
-
 #ifdef COMBO_SLIDE_TEXT
 
 uint8_t comboBoxDraw(widget_t *w) {
@@ -1140,7 +1126,7 @@ uint8_t comboBoxDraw(widget_t *w) {
           len=u8g2_GetUTF8Width(&u8g2,dis->displayString);
         }
         else if(dis->type==field_string){
-          strncpy(displayString,dis->getData(),dis->reservedChars+1);
+          strncpy(displayString,(char*)dis->getData(),dis->reservedChars+1);
           len=u8g2_GetUTF8Width(&u8g2,displayString);
         }
       }
@@ -1168,7 +1154,7 @@ uint8_t comboBoxDraw(widget_t *w) {
         }
       }
       else if(item->type==combo_MultiOption){
-        u8g2_DrawUTF8(&u8g2,dis->stringStart, posY+2,  edit->options[*(uint8_t*)dis->getData()]);
+        u8g2_DrawUTF8(&u8g2,dis->stringStart, posY+2,  edit->options[*(uint32_t*)dis->getData()]);
       }
       u8g2_DrawUTF8(&u8g2, 4, y * height + w->posY +2, item->text);          // Draw the combo item label
     }
@@ -1342,7 +1328,7 @@ int default_widgetProcessInput(widget_t *w, RE_Rotation_t input, RE_State_t *sta
     }
     return -1;
   }
-  if(((w->type == widget_editable) && (sel->state == widget_edit)) || ((w->type == widget_combo)&&combo->currentItem->type==combo_Editable)) {
+  if( edit && sel->state==widget_edit) {
     int32_t val_ui;
     int32_t inc;
     if(w->refresh==refresh_idle){
@@ -1357,8 +1343,43 @@ int default_widgetProcessInput(widget_t *w, RE_Rotation_t input, RE_State_t *sta
     if(state->Diff < 0){
         inc = -inc;
     }
-    if(edit->inputData.type==field_string){
-      int16_t current_edit = (char)dis->displayString[edit->current_edit];
+    if( (w->type == widget_multi_option || (combo && combo->currentItem->type==combo_MultiOption)) ) {
+        int32_t option = *(int32_t*)dis->getData();
+        if(input == Rotate_Increment){
+          if(option < edit->numberOfOptions -1)
+            option++;
+          else
+            option = edit->numberOfOptions -1;
+        }
+        else if(input == Rotate_Decrement){
+          if(option > 0)
+            option--;
+          else
+            option=0;
+        }
+        edit->setData(&option);
+    }
+    else if(dis->type==field_string){
+      if(input == Rotate_Decrement_while_click ||input == Rotate_Increment_while_click){
+        if(input == Rotate_Decrement_while_click){
+          if(edit->current_edit==0){
+            edit->current_edit=dis->reservedChars-1;
+          }
+          else{
+            edit->current_edit--;
+          }
+        }
+        else{
+          if(edit->current_edit<dis->reservedChars-1){
+            edit->current_edit++;
+          }
+          else{
+            edit->current_edit=0;
+          }
+        }
+        return -1;
+      }
+      char current_edit = (char)dis->displayString[edit->current_edit];
       current_edit += inc;
 
       switch(current_edit){//     \0, ' ', 0-9, A-Z
@@ -1390,8 +1411,7 @@ int default_widgetProcessInput(widget_t *w, RE_Rotation_t input, RE_State_t *sta
       dis->displayString[edit->current_edit]=(char)current_edit;
       edit->setData(dis->displayString);
     }
-
-    else if(edit->inputData.type==field_int32){
+    else if(dis->type==field_int32){
       if(!dis->displayString){                            // If empty
         widgetDisable(w);                                 // This shouldn't happen. Disable widget to avoid possible errors.
         return -1;
@@ -1416,21 +1436,6 @@ int default_widgetProcessInput(widget_t *w, RE_Rotation_t input, RE_State_t *sta
       edit->setData(&val_ui);
     }
     return -1;
-  }
-  else if( ((w->type == widget_multi_option) && (sel->state == widget_edit)) || ((w->type == widget_combo)&&combo->currentItem->type==combo_MultiOption)) {
-    if(w->refresh==refresh_idle){
-      w->refresh=refresh_triggered;
-    }
-    int temp = *(uint8_t*)dis->getData();
-    if(input == Rotate_Increment)
-      ++temp;
-    else if(input == Rotate_Decrement)
-      --temp;
-    if(temp < 0)
-      temp = edit->numberOfOptions - 1;
-    else if(temp > edit->numberOfOptions -1)
-      temp = 0;
-    edit->setData(&temp);
   }
   else if (sel->state == widget_selected) {
     uint8_t next = 0xFF;
@@ -1628,4 +1633,30 @@ void comboResetIndex(widget_t *w){
   }
   combo->currentItem = combo->first;
   combo->currentScroll=0;
+}
+
+uint8_t comboItemToIndex(widget_t *w, comboBox_item_t *item) {
+  if(!w || !item){ return 0; }
+  uint8_t index = 0;
+  comboBox_item_t *i = ((comboBox_widget_t*)w->content)->first;
+  while(i->next_item && i != item) {
+    i = i->next_item;
+    if(i->enabled)
+      index++;
+  }
+  return index;
+}
+
+comboBox_item_t *comboIndexToItem(widget_t *w, uint8_t index) {
+  if(!w){ return NULL; }
+  comboBox_widget_t *combo = (comboBox_widget_t*)w->content;
+  comboBox_item_t *i=combo->first;
+  if(!i){ return NULL; }
+  while(i->next_item && index) {
+      i = i->next_item;
+      if(i->enabled){
+        index--;
+      }
+   }
+  return i;
 }

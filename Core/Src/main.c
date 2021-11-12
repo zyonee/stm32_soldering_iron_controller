@@ -121,8 +121,6 @@ void Init(void){
     oled_init(&RE_Get,&RE1_Data);
 }
 
-
-
 /* USER CODE END 0 */
 
 /**
@@ -147,13 +145,11 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
 
   /* Configure the system clock */
-
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
@@ -218,7 +214,7 @@ void Program_Handler(void) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *_htim){
   if(_htim == Iron.Read_Timer){
     __HAL_TIM_CLEAR_FLAG(Iron.Read_Timer,TIM_FLAG_UPDATE);
-    
+
     if(ADC_Status==ADC_Idle){
       __HAL_TIM_SET_AUTORELOAD(Iron.Read_Timer,systemSettings.Profile.readPeriod-(systemSettings.Profile.readDelay+1)); // load (period-delay) time
 

@@ -44,6 +44,8 @@ The actual requirements are 10KB RAM and 64KB **(\*)** flash.<br>
 **(\*)** To date, I have found zero issues. Original KSGER firmware also does this.<br>
 **(\*)** ST-Link checks the written data, and the firmware uses checksums to protect the settings, any error will be detected.<br>
 
+**CLONES** Some controllers began to put stm32 clones due the chip shortage. CKS32 works well, but CH32F doesn't! Avoid the CH32F, the ADC makes strange things.<br>
+
 The [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder has the board code profile, schematics and/or board pictures for quickly identify your hardware.<br>
 Currently supported controllers (Click to download the latest build):<br>
 * [**Quicko T12-072**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F072/STM32SolderingStation.bin): For STM32F072 variant.
@@ -143,6 +145,16 @@ To fix that, enter the [Calibration menu](Readme_files/Operation.md#calibration)
 After that, the offset will be compensated and the cold temperature will be normal.<br>
 It's highly recommended to recalibrate after changing this value.<br>
 
+### KSGER self-resetting<br>
+Some KSGER controllers use a linear regulator to convert 24V to 3.3V, which is a very bad design and generates a lot of heat.<br>
+With the oled displays, each pixel turned on consumes more power, and this firmware uses much larger numbers for the display.<br>
+Thus, this firmware uses some more power. The design is so bad that the regulator will overload and shut down, resetting the board.<br>
+There're some options to fix this:<br>
+- Lower the display brightness to reduce the power consumption.<br>
+- Put a 100-150Ω 2W resistor in series with the regulator (24V->Resistor->LDO input). The resistor will drop part of the voltage and reduce the stress on the regulator.<br>
+- Replace the LDO with a better one, or modify the board, adding a LDO that accepts a small heatsink to take away the heat.<br>
+- Use a small DC/DC step-down module to convert 24V to 5V, and feed 5V to the 3.3V LDO (best option, barely makes any heat).<br>
+
 ### Other issues<br>
 After fully reading the documentation, if you still have problems or doubts, please ask in the EEVblog thread:<br>
 https://www.eevblog.com/forum/reviews/stm32-oled-digital-soldering-station-for-t12-handle.<br>
@@ -157,7 +169,9 @@ If you liked the firmware, you can send me a beer with [PAYPAL](https://www.payp
 ## Building the firmware
 
 Video of building steps:<br>
-[![IMAGE ALT TEXT](http://img.youtube.com/vi/8oeGVSSxudk/0.jpg)](https://www.youtube.com/watch?v=8oeGVSSxudk "Firmware build")
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/8oeGVSSxudk/0.jpg)](https://www.youtube.com/watch?v=8oeGVSSxudk "Firmware build")<br><br>
+There're some helpers in the root of the project that will copy the required files for your controller (_KSGER_v2.bat, _Quicko_F072.bat...).<br>
+Additionally, there's an automated build script (_Automated_Build.bat) that will build all profiles. The compiled binaries will be placed in their respective BOARDS/... folders.<br><br>
 
 If you use an existing project template and modify it, the changes must be reflected in /Core/Inc/board.h.<br>
 All the project code takes the data from there. The file it's pretty much self-explaining.<br>
