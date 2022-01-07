@@ -494,7 +494,7 @@ void resetCurrentProfile(void){
   systemSettings.Profile.sleepTimeout               = (uint32_t)5*60000;      // ms
   systemSettings.Profile.standbyTimeout             = (uint32_t)5*60000;
   systemSettings.Profile.standbyTemperature         = 180;
-  systemSettings.Profile.UserSetTemperature         = 180;
+  systemSettings.Profile.UserSetTemperature         = 320;
   systemSettings.Profile.MaxSetTemperature          = 450;
   systemSettings.Profile.MinSetTemperature          = 180;
   systemSettings.Profile.boostTimeout               = 60000;                  // ms
