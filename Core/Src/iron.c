@@ -11,7 +11,7 @@
 #include "main.h"
 #include "tempsensors.h"
 #include "voltagesensors.h"
-#include "ssd1306.h"
+#include "display.h"
 #include "screens.h"
 #include "oled.h"
 
@@ -64,7 +64,7 @@ void ironInit(TIM_HandleTypeDef *delaytimer, TIM_HandleTypeDef *pwmtimer, uint32
   Iron.Pwm_Channel    = pwmchannel;
   Iron.Error.Flags    = FLAG_NOERROR;
 
-  if(systemSettings.settings.WakeInputMode == mode_shake){
+  if(systemSettings.Profile.WakeInputMode == mode_shake){
     setCurrentMode(systemSettings.settings.initMode);
   }
   else{
@@ -72,7 +72,7 @@ void ironInit(TIM_HandleTypeDef *delaytimer, TIM_HandleTypeDef *pwmtimer, uint32
       setCurrentMode(mode_run);
     }
     else{
-      setCurrentMode(systemSettings.settings.StandMode);
+      setCurrentMode(systemSettings.Profile.StandMode);
     }
   }
   initTimers();
@@ -152,12 +152,7 @@ void handleIron(void) {
   #endif
 
   // Update PID
-  if(Iron.DebugMode==enable){                                                               // If in debug mode, use debug setpoint value
-    Iron.Pwm_Out = calculatePID(Iron.Debug_SetTemperature, TIP.last_avg, Iron.Pwm_Max);
-  }
-  else{                                                                                               // Else, use current setpoint value
-    Iron.Pwm_Out = calculatePID(human2adc(Iron.CurrentSetTemperature), TIP.last_avg, Iron.Pwm_Max);
-  }
+  Iron.Pwm_Out = calculatePID(human2adc(Iron.CurrentSetTemperature), TIP.last_avg, Iron.Pwm_Max);
 
   if(!Iron.Pwm_Out){
     Iron.CurrentIronPower = 0;
@@ -321,41 +316,49 @@ void configurePWMpin(uint8_t mode){
 }
 
 
-// Check iron runaway
-// Number of old power values stored to compute the average power.
-#define RUNAWAY_SZ  3
+void resetRunAway(void){
+#if defined RUNAWAY_RESET_CYCLES && RUNAWAY_RESET_CYCLES>0
+  Iron.resetRunawayHistory=1;
+#endif
+}
 
 void runAwayCheck(void){
   uint32_t CurrentTime = HAL_GetTick();
   uint16_t setTemp = Iron.CurrentSetTemperature;
-  static uint8_t pos, prev_power[RUNAWAY_SZ];
+  static uint8_t pos, prev_power[RUNAWAY_DEPTH];
   uint8_t power = 0;
 
   if(systemSettings.setupMode==enable || (Iron.Error.safeMode && Iron.Error.active)){
     return;
   }
-  if(pid.reset){
-    for(uint8_t t=0; t<RUNAWAY_SZ; t++){                                                      // Clear power history if pid was resetted
-       prev_power[t]=0;
-    }
+#if defined RUNAWAY_RESET_CYCLES && RUNAWAY_RESET_CYCLES>0
+  if(Iron.resetRunawayHistory){
+    if(Iron.resetRunawayHistory==1)                                                             // Clear power history only once
+      for(uint8_t t=0; t<RUNAWAY_DEPTH; t++)
+         prev_power[t]=0;
+    if(++Iron.resetRunawayHistory>(RUNAWAY_RESET_CYCLES-1))                                         // Clear flag
+      Iron.resetRunawayHistory=0;
   }
+#endif
   if(systemSettings.settings.tempUnit==mode_Farenheit){
     setTemp = TempConversion(setTemp, mode_Celsius, 0);
   }
-  prev_power[pos]=Iron.CurrentIronPower;                                                      // Circular buffer
-  if(++pos>RUNAWAY_SZ-1){ pos=0; }
-
-  for(uint8_t t=0; t<RUNAWAY_SZ; t++){
-    power += prev_power[t];
+  if(!Iron.resetRunawayHistory){                                                                // Ignore power if flag is set
+    prev_power[pos]=Iron.CurrentIronPower;                                                      // Circular buffer
+    if(++pos>RUNAWAY_DEPTH-1)
+      pos=0;
+    for(uint8_t t=0; t<RUNAWAY_DEPTH; t++)
+      power += prev_power[t];
+    power /= RUNAWAY_DEPTH;
   }
-  power /= RUNAWAY_SZ;
+
 
   // If by any means the PWM output is higher than max calculated, generate error
   if((Iron.Pwm_Out > (Iron.Pwm_Period+1)) || (Iron.Pwm_Out != __HAL_TIM_GET_COMPARE(Iron.Pwm_Timer,Iron.Pwm_Channel))){
     Error_Handler();
   }
 
-  if(power && (Iron.RunawayStatus==runaway_ok)  && (Iron.DebugMode==disable) && (last_TIP_C > setTemp)){
+  if(power && (Iron.RunawayStatus==runaway_ok) && (last_TIP_C > setTemp)){
 
     if(last_TIP_C>500){ Iron.RunawayLevel=runaway_500; }                                    // 500ºC limit
     else{
@@ -378,31 +381,31 @@ void runAwayCheck(void){
           case runaway_25:                                                                  // Temp >25°C over setpoint
             if((CurrentTime-Iron.RunawayTimer)>20000){                                      // 20 second limit
               Iron.RunawayStatus=runaway_triggered;
-              FatalError(error_RUNAWAY25);
+              fatalError(error_RUNAWAY25);
             }
             break;
           case runaway_50:                                                                  // Temp >50°C over setpoint
             if((CurrentTime-Iron.RunawayTimer)>10000){                                      // 10 second limit
               Iron.RunawayStatus=runaway_triggered;
-              FatalError(error_RUNAWAY50);
+              fatalError(error_RUNAWAY50);
             }
             break;
           case runaway_75:                                                                  // Temp >75°C over setpoint
             if((CurrentTime-Iron.RunawayTimer)>5000){                                       // 5 second limit
               Iron.RunawayStatus=runaway_triggered;
-              FatalError(error_RUNAWAY75);
+              fatalError(error_RUNAWAY75);
             }
             break;
           case runaway_100:                                                                 // Temp >100°C over setpoint
             if((CurrentTime-Iron.RunawayTimer)>2000){                                       // 2 second limit
               Iron.RunawayStatus=runaway_triggered;
-              FatalError(error_RUNAWAY100);
+              fatalError(error_RUNAWAY100);
             }
             break;
           case runaway_500:                                                                 // Exceed 500ºC!
             if((CurrentTime-Iron.RunawayTimer)>2000){                                       // 2 second limit
               Iron.RunawayStatus=runaway_triggered;
-              FatalError(error_RUNAWAY500);
+              fatalError(error_RUNAWAY500);
             }
             break;
           default:                                                                          // Unknown overrun state
@@ -490,6 +493,7 @@ void setCurrentMode(uint8_t mode){
   if(Iron.CurrentMode != mode){                                                           // If current mode is different
     Iron.CurrentMode = mode;
     resetPID();
+    resetRunAway();
     if(!Iron.calibrating){
       buzzer_long_beep();
       modeChanged(mode);
@@ -504,7 +508,7 @@ void setCurrentMode(uint8_t mode){
 // Called from program timer if WAKE change is detected
 bool IronWake(bool source){                                                                 // source: handle shake, encoder push button
   static uint32_t last_time;
-  if(Iron.Error.Flags || systemSettings.settings.WakeInputMode==mode_stand){
+  if(Iron.Error.Flags || systemSettings.Profile.WakeInputMode==mode_stand){
     return 0;
   }
 
@@ -523,7 +527,7 @@ bool IronWake(bool source){                                                     
     }
   }
 
-  if(systemSettings.settings.shakeFiltering && source==wakeInput){      // Sensitivity workaround enabled
+  if(systemSettings.Profile.shakeFiltering && source==wakeInput){      // Sensitivity workaround enabled
     uint32_t time=(HAL_GetTick()-last_time);
     last_time = HAL_GetTick();
     if(time<100 || time>500){                                           // Ignore changes happening faster than 100mS or slower than 500mS.
@@ -544,12 +548,12 @@ void readWake(void){
 
     if(last_wake!=now_wake){                                            // If wake sensor input changed
       last_wake=now_wake;
-      if(systemSettings.settings.WakeInputMode==mode_stand){   // In stand mode
+      if(systemSettings.Profile.WakeInputMode==mode_stand){   // In stand mode
         if(now_wake){
           setModefromStand(mode_run);
         }
         else{
-          setModefromStand(systemSettings.settings.StandMode);          // Set sleep or standby mode depending on system setting
+          setModefromStand(systemSettings.Profile.StandMode);          // Set sleep or standby mode depending on system setting
         }
       }
       else{
@@ -655,25 +659,6 @@ bool GetSafeMode() {
   return(Iron.Error.safeMode && Iron.Error.active);
 }
 
-void setDebugTemp(uint16_t value) {
-  __disable_irq();
-  Iron.Debug_SetTemperature = value;
-  __enable_irq();
-}
-
-uint16_t getDebugTemp(void){
-  return Iron.Debug_SetTemperature;
-}
-
-void setDebugMode(uint8_t value) {
-  __disable_irq();
-  Iron.DebugMode = value;
-  __enable_irq();
-}
-uint8_t getDebugMode(void){
-  return Iron.DebugMode;
-}
-
 void setCalibrationMode(uint8_t mode){
   __disable_irq();
   Iron.calibrating = mode;
@@ -691,8 +676,9 @@ uint8_t getCalibrationMode(void){
 void setUserTemperature(uint16_t temperature) {
   __disable_irq();
   Iron.UserSetTemperature = temperature;
-  resetPID();
   if(Iron.CurrentMode==mode_run){
+    resetPID();
+    resetRunAway();
     Iron.temperatureReached = 0;
     Iron.CurrentSetTemperature = temperature;
   }

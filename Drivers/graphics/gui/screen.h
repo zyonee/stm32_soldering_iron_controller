@@ -12,7 +12,7 @@
 #include "iron.h"
 #include "pid.h"
 #include "settings.h"
-#include "ssd1306.h"
+#include "display.h"
 
 #include "widgets.h"
 #include "adc_global.h"
@@ -21,14 +21,15 @@
 #include "tempsensors.h"
 #include "voltagesensors.h"
 
-enum {
+typedef enum {
     screen_boot,
     screen_main,
       screen_settings,
           screen_iron,
             screen_advFilter,
+            screen_ntc,
           screen_system,
-              screen_ntc,
+              screen_display,
               screen_reset,
                 screen_reset_confirmation,
           screen_tip_list,
@@ -39,7 +40,7 @@ enum {
               screen_calibration_settings,
               screen_calibration_input,
           screen_debug,
-    };
+}screens_t;
 
 typedef struct screen_t screen_t;
 typedef enum{ screen_Idle=0, screen_Erase, screen_Erased } screenRefreshType;
@@ -56,7 +57,7 @@ struct screen_t
   uint8_t (*draw)(screen_t *scr);
   void (*onExit)(screen_t *scr);
   void (*onEnter)(screen_t *scr);
-  uint8_t index;
+  screens_t index;
   void (*init)(screen_t *scr);
   void (*create)(screen_t *scr);
   uint8_t backup_combo_scroll;

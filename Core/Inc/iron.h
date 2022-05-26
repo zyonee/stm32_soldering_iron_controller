@@ -10,10 +10,11 @@
 #include "pid.h"
 #include "settings.h"
 
-#define PWM_DETECT_TIME   5                                    // Pulse before reading adc, to detect tip presence. In uS
+#define TIP_DETECT_TIME         5                           // Pulse before reading adc, to detect tip presence. In uS
+#define RUNAWAY_DEPTH           3                           // History count of power values stored to compute the average power for runaway monitor
+#define RUNAWAY_RESET_CYCLES    3                           // Cycles to bypass runaway check when temperature was changed
 
 typedef void (*setTemperatureReachedCallback)(uint16_t);
-
 
 typedef void (*currentModeChanged)(uint8_t);
 typedef union{
@@ -45,6 +46,7 @@ typedef struct {
   uint8_t             CurrentIronPower;                     // Last output power
   uint8_t             CurrentMode;                          // Actual working mode (Standby, Sleep, Normal, Boost)
   uint8_t             changeMode;                           // change working mode to (Standby, Sleep, Normal, Boost)
+  uint8_t             resetRunawayHistory;                  // Flag to indicate it must reset the history (When temp is changed)
   uint8_t             RunawayLevel;                         // Runaway actual level
   uint8_t             prevRunawayLevel;                     // Runaway previous level
   uint8_t             RunawayStatus;                        // Runaway triggered flag
@@ -52,7 +54,6 @@ typedef struct {
   uint8_t             updateStandMode;                      // Flag to indicate the stand mode must be changed
   uint8_t             shakeActive;                          // Flag to indicate handle movement
   uint8_t             temperatureReached;                   // Flag for temperature calibration
-  uint8_t             DebugMode;                            // Flag to indicate Debug is enabled
   uint8_t             updatePwm;                            // Flag to indicate PWM need to be updated
   IronError_t         Error;                                // Error flags
   uint8_t             lastMode;                             // Last mode before error condition.
@@ -62,7 +63,6 @@ typedef struct {
   uint16_t            Pwm_Max;                              // Max PWM output for power limit
   int16_t             UserSetTemperature;                   // Run mode user setpoint
   int16_t             CurrentSetTemperature;                // Actual set temperature (Setpoint)
-  int16_t             Debug_SetTemperature;                 // Debug mode temperature
 
   uint32_t            Pwm_Out;                              // Last calculated PWM value
   uint32_t            LastModeChangeTime;                   // Last time the mode was changed (To provide debouncing)
@@ -104,10 +104,6 @@ void addModeChangedCallback(currentModeChanged callback);
 void handleIron(void);
 void ironInit(TIM_HandleTypeDef *delaytimer, TIM_HandleTypeDef *pwmtimer, uint32_t pwmchannel);
 uint8_t getIronOn();
-void setDebugTemp(uint16_t value);
-uint16_t getDebugTemp(void);
-void setDebugMode(uint8_t value);
-uint8_t getDebugMode(void);
 void setCalibrationMode(uint8_t mode);
 uint8_t getCalibrationMode(void);
 void configurePWMpin(uint8_t mode);

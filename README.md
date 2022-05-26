@@ -4,6 +4,7 @@
 
 * [Project details](#Details)
 * [Compatibility](#Compatibility)
+* [Programming](Readme_files/Programming.md)
 * [Operating instructions](Readme_files/Operation.md)
 * [Frequently asked questions](#faq)
 * [Building the firmware](#build)
@@ -12,13 +13,17 @@
 * [Additional Documentation](#docs)
 * [Pending or non working features](#pending)
 
+
 <!-- /MarkdownTOC -->
+
+ If you liked the firmware, you can send me a beer with [PAYPAL](https://www.paypal.me/davidalfistas) 🙂<br>
 
 --- 
 
 Video of operation here: (Project in active development, the features will change continuously)<br>
 
-[![IMAGE ALT TEXT](https://img.youtube.com/vi/j0HQq4aRiXw/0.jpg)](https://www.youtube.com/watch?v=j0HQq4aRiXw "STM32 T12 custom firmware")
+[![IMAGE ALT TEXT](https://img.youtube.com/vi/j0HQq4aRiXw/0.jpg)](https://www.youtube.com/watch?v=j0HQq4aRiXw "STM32 T12 custom firmware")<br><br>
+
 
 ---
 
@@ -51,8 +56,8 @@ Currently supported controllers (Click to download the latest build):<br>
 * [**Quicko T12-072**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F072/STM32SolderingStation.bin): For STM32F072 variant.
 * [**Quicko T12-103**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/Quicko/STM32F103/STM32SolderingStation.bin): For STM32F103 variant.
 * [**KSGER v1.5**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv1.5%5D/STM32F103/STM32SolderingStation.bin): Profile for STM32F103 (There are no other known CPUs used in this board).
-* [**KSGER v2.x**, **JCD T12**, **QUECOO T12-955**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32F101/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
-* [**KSGER v3.x**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv3%5D/STM32F101/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
+* [**KSGER v2.x**, **JCD T12**, **T12-955**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv2%5D/STM32F101/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
+* [**KSGER v3.x**, **T12-958**](https://github.com/deividAlfa/stm32_soldering_iron_controller/raw/master/BOARDS/KSGER/%5Bv3%5D/STM32F101/STM32SolderingStation.bin): Profile compatible with all STM32F101/2/3xx models.
 
 For KSGER v2/v3: As long as use the correct firmware, any STM32 variant (101/102/103/C8/R8/CB/RB) will work.<br>
 
@@ -64,6 +69,7 @@ Also keep in mind that you can't trust the version shown in the original firmwar
 Go to [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS)/... schematics folder and compare the pictures.<br>
 There are several compatible/cloned boards in the market that will work fine with Ksger profiles.<br>
 
+T12-951, T12-952, T12-956, T12-959 use STC mcu, not supported by this firmware.<br>
 
 ---
 
@@ -86,19 +92,6 @@ Any difference in the pinout will require firmware tuning, although one of the m
 There are some hacks / vulnerabilities that can be used to backup protected firmware, more details here:<br>
 **[STM32 power glitching timing attack](https://github.com/dreamcat4/t12-t245-controllers-docs/tree/master/tools/software/STM32CubeIDE#option-2-power-glitching-timing-attack
 )**<br>
-
-### Flashing the firmware
-There's no support for custom bootloaders.<br>
-Use one of these ST-LINK clones ($3 or less), refer to the schematics for the SWD pinout.<br>
-
-Download the binary **STM32SolderingStation.bin** already compiled from the [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder and flash it using stlink.<br>
-Follow this pictures to update the firmware without erasing the stored settings.<br>
-Important: STM32F072 has 2KB flash sector size, so only de-select the last sector.<br>
-(Click for bigger picture)<br>
-<img src="/Readme_files/stlink_erase.png?raw=true"><br>
-<img src="/Readme_files/stlink_program.png?raw=true"><br>
-
-In any case, the firmware will check the settings and reset them if not valid.<br>
 
 ### Display issues<br>
 If the display has right/left line like this picture: Go to [System menu](Readme_files/Operation.md#system) / Offset and adjust the value until it's centered.<br>
@@ -159,10 +152,6 @@ There're some options to fix this:<br>
 After fully reading the documentation, if you still have problems or doubts, please ask in the EEVblog thread:<br>
 https://www.eevblog.com/forum/reviews/stm32-oled-digital-soldering-station-for-t12-handle.<br>
 
-### Donations
-If you liked the firmware, you can send me a beer with [PAYPAL](https://www.paypal.me/davidalfistas)<br>
-(Gin tonics, coffees and steaks are also accepted 🙂 )<br>
-
 ---
 
 <a id="build"></a>     
@@ -170,13 +159,11 @@ If you liked the firmware, you can send me a beer with [PAYPAL](https://www.payp
 
 Video of building steps:<br>
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/8oeGVSSxudk/0.jpg)](https://www.youtube.com/watch?v=8oeGVSSxudk "Firmware build")<br><br>
-There're some helpers in the root of the project that will copy the required files for your controller (_KSGER_v2.bat, _Quicko_F072.bat...).<br>
-Additionally, there's an automated build script (_Automated_Build.bat) that will build all profiles. The compiled binaries will be placed in their respective BOARDS/... folders.<br><br>
 
-If you use an existing project template and modify it, the changes must be reflected in /Core/Inc/board.h.<br>
-All the project code takes the data from there. The file it's pretty much self-explaining.<br>
-So, any changes you make in CubeMX, ex. use PWM timer6 intead timer2, or SPI1 instead SPI2...all that should be configured in their respective define.<br>
-As long as the GPIO names are called the same way, no further changes are needed.<br>
+There's a new automated build script for Windows (_Building_script.bat) that allows a simple and fast way of copying and building the desired profile.<br>
+With it, all you need is to have CubeIDE installed in C:\ST... (It's the default installation folder), it will search and execute the tools without requiring any user intervention.<br>
+Just open it, choose your profile, and if you want to build it or not.<br>
+The compiled binaries will be placed in their respective BOARDS/... folders.<br><br>
 
 If you want to build your own, clone or download the source.<br>
 The source is stripped from ST own libraries and unnecesary stuff, only includes the very basic code owning to the project.<br>
@@ -184,7 +171,9 @@ CubeMX will add the STM32 and CMSIS libraries automatically after a code generat
 Open the [BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder, find your board (or take any to work with) and copy all the contents to the root of the project.<br><br>
 Open STM32CUBE IDE, click on Import/Existing project and select the project folder.<br>
 Important: Disable "Search for nested projects", select only the project in the root of the folder.<br>
-After that, double-click on [STM32SolderingStation.ioc] file, CubeMX will open, then click on generate code:<br>
+After that, double-click on [STM32SolderingStation.ioc] file:<br>
+<img src="/Readme_files/open_ioc.png?raw=true"><br><br>
+CubeMX will open, then click on generate code:<br>
 <img src="/Readme_files/gen.png?raw=true"><br><br>
 After this, it'll be ready for compiling, click in the right arrow of the build button (Hammer icon) and select [Release]:<br>
 <img src="/Readme_files/release.jpg?raw=true"><br><br>
@@ -194,25 +183,22 @@ Right click on project -> [Properties] -> [C/C++ Build] -> [Settings] ->  [Tool 
 Select [All configurations] in [Configuration] dropdown menu.<br>
 Now ensure these are present:<br>
 
-      /Core/Inc<br>
-      /Core/Src<br>
-      /Drivers/generalIO<br>
-      /Drivers/graphics<br>
-      /Drivers/graphics/gui<br>
-      /Drivers/graphics/gui/screens<br>
-      /Drivers/graphics/u8g2<br>
-      /Drivers/STM32Fxxx_HAL_Driver/Inc<br>
-      /Drivers/STM32Fxxx_HAL_Driver/Inc/Legacy<br>
-      /Drivers/CMSIS/Device/ST/STM32Fxxx/Include<br>
-      /Drivers/CMSIS/Include<br>
+      /Core/Inc
+      /Core/Src
+      /Drivers/generalIO
+      /Drivers/graphics
+      /Drivers/graphics/gui
+      /Drivers/graphics/gui/screens
+      /Drivers/graphics/u8g2
+      /Drivers/STM32Fxxx_HAL_Driver/Inc
+      /Drivers/STM32Fxxx_HAL_Driver/Inc/Legacy
+      /Drivers/CMSIS/Device/ST/STM32Fxxx/Include
+      /Drivers/CMSIS/Include
+      
 (STM32Fxxx matches your current mcu family, ex. STM32F0xx, STM32F1xx)<br><br>
 If any is missing, click on Add... Select Workspace and select the missing ones.<br>
 You can make multiple selection  while holding the Control key:<br>      
 <img src="/Readme_files/Includes.jpg?raw=true">
-
-
-Click in the right arrow of the build button (Hammer icon), select Release, then click on the build button and should build right away.<br>
-<img src="/Readme_files/release.jpg?raw=true">
 
 At some point, the firmware might not fit into the flash when compiling for debugging, as it'll skip optimizations, and use much more space.<br>
 In that case, you'll need to force some optimization level, starting with "Optimize for debug" (Og), and going to higher levels if still being too big (O1,O2,Osize).<br>
@@ -236,7 +222,12 @@ Run the included script "Clean_Profile.bat", or manually delete these files:<br>
     /Core/Src/system_stm32*
     /Core/Startup/*
 
-And then copy the board profile files overwriting any existing files.<br>
+And then copy the board profile files overwriting any existing files.<br><br>
+
+If you use an existing project template and modify it, the changes must be reflected in /Core/Inc/board.h.<br>
+All the project code takes the data from there. The file it's pretty much self-explaining.<br>
+So, any changes you make in CubeMX, ex. use PWM timer6 intead timer2, or SPI1 instead SPI2...all that should be configured in their respective define.<br>
+As long as the GPIO names are called the same way, no further changes are needed.<br>
  
 ---
 

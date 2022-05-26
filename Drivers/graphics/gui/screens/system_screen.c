@@ -7,19 +7,12 @@
 
 #include "system_screen.h"
 #include "screen_common.h"
-#include "tempsensors.h"
 
 screen_t Screen_system;
 screen_t Screen_system_ntc;
 
-
-static comboBox_item_t *comboitem_system_Dim_Timeout;
-static comboBox_item_t *comboitem_system_Dim_PowerOff;
-
 static comboBox_item_t *comboitem_system_ButtonWakeMode;
 static comboBox_item_t *comboitem_system_ShakeWakeMode;
-static comboBox_item_t *comboitem_system_ShakeFiltering;
-static comboBox_item_t *comboitem_system_StandMode;
 static comboBox_item_t *comboitem_system_BootMode;
 
 
@@ -28,13 +21,7 @@ static editable_widget_t *editable_system_bigTempStep;
 static editable_widget_t *editable_system_GuiTempDenoise;
 
 void update_System_menu(void){
-  bool mode = (systemSettings.settings.dim_mode>dim_off);
-  comboitem_system_Dim_PowerOff->enabled = mode;
-  comboitem_system_Dim_Timeout->enabled = mode;
-
-  mode = (systemSettings.settings.WakeInputMode==mode_shake);
-  comboitem_system_StandMode->enabled       = !mode;
-  comboitem_system_ShakeFiltering->enabled  = mode;
+  bool mode = (systemSettings.Profile.WakeInputMode==mode_shake);
   comboitem_system_BootMode->enabled        = mode;
   comboitem_system_ShakeWakeMode->enabled   = mode;
   comboitem_system_ButtonWakeMode->enabled  = mode;
@@ -113,79 +100,12 @@ static void setGuiTempDenoise(uint32_t *val) {
   systemSettings.settings.guiTempDenoise = *val;
 }
 //=========================================================
-static void * getContrast_() {
-  temp = systemSettings.settings.contrast/25;
-  return &temp;
-}
-static void setContrast_(uint32_t *val) {
-  if(*val==0){
-    systemSettings.settings.contrast=5;
-  }
-  else if(*val==10){
-    systemSettings.settings.contrast=255;
-  }
-  else{
-    systemSettings.settings.contrast=*val*25;
-  }
-  setContrast(systemSettings.settings.contrast);
-}
-//=========================================================
-static void * getOledOffset() {
-  temp = systemSettings.settings.OledOffset;
-  return &temp;
-}
-static void setOledOffset(uint32_t *val) {
-  systemSettings.settings.OledOffset= *val;
-}
-//=========================================================
-static void * getdimMode() {
-  temp = systemSettings.settings.dim_mode;
-  return &temp;
-}
-static void setdimMode(uint32_t *val) {
-  systemSettings.settings.dim_mode = * val;
-  update_System_menu();
-}
-//=========================================================
-static void * getDimTimeout() {
-  temp = systemSettings.settings.dim_Timeout/1000;
-  return &temp;
-}
-static void setDimTimeout(uint32_t *val) {
-  systemSettings.settings.dim_Timeout = *val*1000;
-}
-//=========================================================
-static void * getDimTurnOff() {
-  temp = systemSettings.settings.dim_inSleep;
-  return &temp;
-}
-static void setDimTurnOff(uint32_t *val) {
-  systemSettings.settings.dim_inSleep = *val;
-}
-//=========================================================
 static void * getActiveDetection() {
   temp = systemSettings.settings.activeDetection;
   return &temp;
 }
 static void setActiveDetection(uint32_t *val) {
   systemSettings.settings.activeDetection = * val;
-}
-//=========================================================
-static void * getWakeMode() {
-  temp = systemSettings.settings.WakeInputMode;
-  update_System_menu();
-  return &temp;
-}
-static void setWakeMode(uint32_t *val) {
-  systemSettings.settings.WakeInputMode = *val;
-}
-//=========================================================
-static void * getStandMode() {
-  temp = systemSettings.settings.StandMode;
-  return &temp;
-}
-static void setStandMode(uint32_t *val) {
-  systemSettings.settings.StandMode = *val;
 }
 //=========================================================
 static void * getEncoderMode() {
@@ -263,14 +183,6 @@ static void setShakeWakeMode(uint32_t *val) {
   systemSettings.settings.shakeWakeMode = *val;
 }
 //=========================================================
-static void * getShakeFiltering() {
-  temp = systemSettings.settings.shakeFiltering;
-  return &temp;
-}
-static void setShakeFiltering(uint32_t *val) {
-  systemSettings.settings.shakeFiltering = *val;
-}
-//=========================================================
 static void system_onEnter(screen_t *scr){
   if(scr==&Screen_settings){
     comboResetIndex(Screen_system.current_widget);
@@ -314,98 +226,6 @@ static void system_create(screen_t *scr){
   edit->setData = (void (*)(void *))&setProfile;
   edit->options = profileStr;
   edit->numberOfOptions = ProfileSize;
-
-  //  [ Contrast Widget ]
-  //
-  newComboEditable(w, strings[lang].SYSTEM_Oled_Contrast, &edit, NULL);
-  dis=&edit->inputData;
-  dis->reservedChars=3;
-  dis->getData = &getContrast_;
-  edit->big_step = 1;
-  edit->step = 1;
-  edit->setData = (void (*)(void *))&setContrast_;
-  edit->max_value = 10;
-  edit->min_value = 0;
-
-  //  [ Oled Offset Widget ]
-  //
-  newComboEditable(w, strings[lang].SYSTEM_Oled_Offset, &edit, NULL);
-  dis=&edit->inputData;
-  dis->reservedChars=2;
-  dis->getData = &getOledOffset;
-  edit->big_step = 1;
-  edit->step = 1;
-  edit->setData = (void (*)(void *))&setOledOffset;
-  edit->max_value = 15;
-  edit->min_value = 0;
-
-  //  [ Oled dimming Widget ]
-  //
-  newComboMultiOption(w, strings[lang].SYSTEM_Oled_Dim, &edit, NULL);
-  dis=&edit->inputData;
-  dis->getData = &getdimMode;
-  edit->big_step = 1;
-  edit->step = 1;
-  edit->setData = (void (*)(void *))&setdimMode;
-  edit->options = strings[lang].dimMode;
-  edit->numberOfOptions = 3;
-
-  //  [ Oled dim delay Widget ]
-  //
-  newComboEditable(w, strings[lang].__Delay, &edit, &comboitem_system_Dim_Timeout);
-  dis=&edit->inputData;
-  dis->reservedChars=4;
-  dis->endString="s";
-  dis->getData = &getDimTimeout;
-  edit->big_step = 10;
-  edit->step = 5;
-  edit->setData = (void (*)(void *))&setDimTimeout;
-  edit->max_value = 600;
-  edit->min_value = 5;
-
-  //  [ Oled dim turn off Widget ]
-  //
-  newComboMultiOption(w, strings[lang].SYSTEM_Oled_Dim_inSleep, &edit, &comboitem_system_Dim_PowerOff);
-  dis=&edit->inputData;
-  dis->getData = &getDimTurnOff;
-  edit->big_step = 1;
-  edit->step = 1;
-  edit->setData = (void (*)(void *))&setDimTurnOff;
-  edit->options = strings[lang].OffOn;
-  edit->numberOfOptions = 2;
-
-  //  [ Wake mode Widget ]
-  //
-  newComboMultiOption(w, strings[lang].SYSTEM_Wake_Mode, &edit, NULL);
-  dis=&edit->inputData;
-  dis->getData = &getWakeMode;
-  edit->big_step = 1;
-  edit->step = 1;
-  edit->setData = (void (*)(void *))&setWakeMode;
-  edit->options = strings[lang].wakeMode;
-  edit->numberOfOptions = 2;
-
-  //  [ Shake filtering Widget ]
-  //
-  newComboMultiOption(w, strings[lang].SYSTEM_Shake_Filtering, &edit, &comboitem_system_ShakeFiltering);
-  dis=&edit->inputData;
-  dis->getData = &getShakeFiltering;
-  edit->big_step = 1;
-  edit->step = 1;
-  edit->setData = (void (*)(void *))&setShakeFiltering;
-  edit->options = strings[lang].OffOn;
-  edit->numberOfOptions = 2;
-
-  //  [ Stand mode Widget ]
-  //
-  newComboMultiOption(w, strings[lang].SYSTEM_Stand_Mode, &edit, &comboitem_system_StandMode);
-  dis=&edit->inputData;
-  dis->getData = &getStandMode;
-  edit->big_step = 1;
-  edit->step = 1;
-  edit->setData = (void (*)(void *))&setStandMode;
-  edit->options = strings[lang].InitMode;
-  edit->numberOfOptions = 2;
 
   //  [ Boot mode Widget ]
   //
@@ -564,6 +384,7 @@ static void system_create(screen_t *scr){
   edit->numberOfOptions = 2;
 #endif
   newComboScreen(w, strings[lang].SYSTEM_RESET_MENU, screen_reset, NULL);
+  newComboScreen(w, strings[lang].SYSTEM_DISPLAY_MENU, screen_display, NULL);
   newComboScreen(w, SWSTRING, -1, NULL);
   newComboAction(w, HWSTRING, &hwAction, NULL);
   newComboScreen(w, strings[lang]._BACK, screen_settings, NULL);
