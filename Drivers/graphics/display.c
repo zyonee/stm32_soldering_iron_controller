@@ -15,7 +15,8 @@ oled_t oled;
 static uint8_t lastContrast;
 static uint8_t powerStatus;
 static uint8_t inFatalError;
-
+volatile uint32_t hardFault_args[9];
+volatile uint32_t r4, r5, r6;
 static void _lcd_write(uint8_t *data, uint16_t count, uint8_t mode);
 
 /* This displays require both cmd and arguments to be sent with DC=0, so everythign is send at once */
@@ -369,13 +370,13 @@ void setDisplayResRatio(uint8_t r){
 }
 #endif
 
-void setDisplayContrast(uint8_t value) {
+void setDisplayContrastOrBrightness(uint8_t value) {
   uint8_t cmd [] = { 0x81, value };
   lcd_write(cmd, sizeof(cmd), modeCmd);
   lastContrast = value;
 }
 
-uint8_t getDisplayContrast(void) {
+uint8_t getDisplayContrastOrBrightness(void) {
   return lastContrast;
 }
 
@@ -544,18 +545,11 @@ void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef *device){
 #endif
 
 void fatalError(uint8_t type){
- inFatalError = 1;
- uint8_t lang = systemSettings.settings.language;
- if(lang>(LANGUAGE_COUNT-1))
-   lang=lang_english;
-
-#if defined DISPLAY_DEVICE
-  if(!oled.use_sw)
-    display_dma_abort();
-#endif
-
-  setSafeMode(enable);
-  buzzer_fatal_beep();
+  inFatalError = 1;
+  uint8_t lang = systemSettings.settings.language;
+  if(lang>(LANGUAGE_COUNT-1)){
+    lang=lang_english;
+  }
   Oled_error_init();
   switch(type){
     case error_FLASH:
@@ -565,8 +559,28 @@ void fatalError(uint8_t type){
       putStrAligned("NMI HANDLER", 0, align_center);
       break;
     case error_HARDFAULT:
+    {
+      char str[32];
       putStrAligned("HARD FAULT", 0, align_center);
+      u8g2_SetFont(&u8g2,u8g2_font_5x8_tr);
+      sprintf(str,"r0:%08lX   r1:%08lX", hardFault_args[0], hardFault_args[1]);
+      u8g2_DrawUTF8(&u8g2, 0, 12, str);
+      sprintf(str,"r2:%08lX   r3:%08lX", hardFault_args[2], hardFault_args[3]);
+      u8g2_DrawUTF8(&u8g2, 0, 20, str);
+      sprintf(str,"r4:%08lX   r5:%08lX", r4, r5);
+      u8g2_DrawUTF8(&u8g2, 0, 28, str);
+      sprintf(str,"r6:%08lX   sp:%08lX", r6, hardFault_args[8]);
+      u8g2_DrawUTF8(&u8g2, 0, 36, str);
+      sprintf(str,"lr:%08lX  r12:%08lX", hardFault_args[5], hardFault_args[4]);
+      u8g2_DrawUTF8(&u8g2, 0, 44, str);
+      sprintf(str,"pc:%08lX  psr:%08lX", hardFault_args[6], hardFault_args[7]);
+      u8g2_DrawUTF8(&u8g2, 0, 52, str);
+      /*
+      sprintf(str,"PC: %08lX", SCB->BFAR);
+      */
+      u8g2_SetFont(&u8g2, default_font);
       break;
+    }
     case error_MEMMANAGE:
       putStrAligned("MEM MANAGE", 0, align_center);
       break;
@@ -582,10 +596,10 @@ void fatalError(uint8_t type){
     case error_RUNAWAY100:
     {
       uint8_t level = 25 * ((type - error_RUNAWAY25)+1);
-      char strRunawayLevel[8];
-      sprintf(strRunawayLevel,">%u\260C\n",level);
+      char str[8];
+      sprintf(str,">%u\260C",level);
       putStrAligned(strings[lang].ERROR_RUNAWAY, 0, align_center);
-      putStrAligned(strRunawayLevel, 15, align_center);
+      putStrAligned(str, 15, align_center);
       break;
     }
     case error_RUNAWAY500:
@@ -597,8 +611,8 @@ void fatalError(uint8_t type){
       putStrAligned(strings[lang].ERROR_UNKNOWN, 0, align_center);
       break;
   }
-  putStrAligned(strings[lang].ERROR_SYSTEM_HALTED, 35, align_center);
-  putStrAligned(strings[lang].ERROR_BTN_RESET, 50, align_center);
+  if(type!=error_HARDFAULT)
+    putStrAligned(strings[lang].ERROR_BTN_RESET, 50, align_center);
 
 #if (defined DISPLAY_I2C || defined DISPLAY_SPI) && defined DISPLAY_DEVICE
   if(!oled.use_sw)
@@ -634,6 +648,10 @@ void putStrAligned(char* str, uint8_t y, AlignType align){
 }
 void buttonReset(void){
   __disable_irq();
+  while(!BUTTON_input()){                   // Wait while the button is released
+    for(uint16_t i=0;i<50000;i++);          // Small delay
+    HAL_IWDG_Refresh(&hiwdg);               // Clear watchdog
+  }
   while(BUTTON_input()){                    // Wait until the button is pressed
     for(uint16_t i=0;i<50000;i++);          // Small delay
     HAL_IWDG_Refresh(&hiwdg);               // Clear watchdog
@@ -643,4 +661,19 @@ void buttonReset(void){
     HAL_IWDG_Refresh(&hiwdg);               // Clear watchdog
   }
   NVIC_SystemReset();                       // Reset system
+}
+
+void Oled_error_init(void){
+  setSafeMode(enable);
+#if defined DISPLAY_DEVICE
+  if(!oled.use_sw)
+    display_dma_abort();
+#endif  
+  buzzer_fatal_beep();
+  setDisplayContrastOrBrightness(defaultSettings.contrastOrBrightness);
+  fillBuffer(BLACK,fill_soft);
+  u8g2_SetFont(&u8g2,default_font );
+  u8g2_SetDrawColor(&u8g2, WHITE);
+  u8g2_SetMaxClipWindow(&u8g2);
+  systemSettings.settings.displayOffset = DISPLAY_OFFSET;
 }

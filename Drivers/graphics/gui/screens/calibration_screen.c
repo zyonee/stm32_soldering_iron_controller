@@ -10,7 +10,7 @@
 
 #define CAL_TIMEOUT 300000                                          // Inactivity timeout in milliseconds
 
-enum { zero_disabled, zero_sampling, zero_capture };
+typedef enum { zero_disabled, zero_sampling, zero_capture }zero_state_t;
 const  int16_t state_temps[2] = { 2500, 4000 };                     // Temp *10 for better accuracy
 static uint8_t error;
 static bool backupTempUnit;
@@ -26,11 +26,12 @@ static int32_t measuredTemp;
 static uint8_t processCalibration(void);
 static void setCalState(state_t s);
 static tipData_t *Currtip;
-static uint8_t update, update_draw, zero_state;
+static uint8_t update, update_draw;
+static zero_state_t zero_state;
 screen_t Screen_calibration;
 screen_t Screen_calibration_start;
 screen_t Screen_calibration_settings;
-static char zeroStr[16];
+static char zeroStr[32];
 static widget_t *Widget_Cal_Button;
 static widget_t *Widget_Cal_Measured;
 
@@ -277,7 +278,7 @@ static void Cal_create(screen_t *scr) {
 
 static void Cal_Start_init(screen_t *scr) {
   default_init(scr);
-  backupTempUnit=systemSettings.settings.tempUnit;
+  backupTempUnit=getSystemTempUnit();
   setSystemTempUnit(mode_Celsius);
   backup_tip();
 
@@ -311,7 +312,7 @@ static int Cal_Start_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_
     }
   }
 
-  if(GetIronError()){
+  if(isIronInError()){
     error=1;
     return last_scr;
   }
@@ -362,7 +363,7 @@ static uint8_t Cal_Start_draw(screen_t *scr){
 
     if(current_state<cal_finished){
       uint8_t s = current_state;
-      u8g2_DrawUTF8(&u8g2, 0, 50, systemSettings.Profile.tip[systemSettings.Profile.currentTip].name);  // Draw current tip name
+      u8g2_DrawUTF8(&u8g2, 0, 50, systemSettings.Profile.tip[systemSettings.currentTip].name);  // Draw current tip name
       u8g2_DrawUTF8(&u8g2, 8, 6, strings[lang].CAL_Step);            // Draw current cal state
 
       if(current_state<cal_input_250){
@@ -452,7 +453,7 @@ static void Cal_Settings_OnExit(screen_t *scr) {
 }
 
 static int Cal_Settings_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_State_t *s) {
-  if(GetIronError()){
+  if(isIronInError()){
     error=1;
     return last_scr;
   }
