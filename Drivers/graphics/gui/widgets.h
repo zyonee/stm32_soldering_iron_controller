@@ -10,12 +10,18 @@
 
 #include "rotary_encoder.h"
 
-#define default_font u8g2_font_menu
+// Don't change these
+#define COMBO_STYLE_VAR     0                   // Highlight only the variable (Will fallback to this value if COMBO_STYLE not defined)
+#define COMBO_STYLE_ALL     1                   // Highlight the entire menu entry
+#define COMBO_STYLE_SLIDE   2                   // Experimental feature, divide screen and slide menu text (Allows larger strings)
 
-//#define COMBO_SLIDE_TEXT                                                    // Testing feature, not enabled by default
+// User-adjustable
+#define DEFAULT_FRAME_R     3                   // Default widget frame radius (round corners). -1=auto(height/2), 0=square, >0=radius
+#define COMBO_STYLE         COMBO_STYLE_VAR     // Use this combo style
+#define DEFAULT_FONT        u8g2_font_menu      // This is the default widget font
 
 typedef enum widgetStateType {widget_idle, widget_selected, widget_edit, widget_error}widgetStateType;
-typedef enum widgetFieldType {field_int32, field_bmp, field_string}widgetFieldType;
+typedef enum widgetFieldType {field_int32, field_hex, field_bmp, field_string}widgetFieldType;
 typedef enum AlignType { align_disabled, align_left, align_center, align_right }AlignType;
 typedef enum widgetFrameType {frame_auto, frame_solid, frame_outline, frame_disabled, frame_combo}widgetFrameType;
 typedef enum widgetType {widget_combo, widget_label, widget_display, widget_editable, widget_bmp, widget_multi_option, widget_button, widget_bmp_button}widgetType;
@@ -31,6 +37,7 @@ typedef struct displayOnly_widget_t displayOnly_widget_t;
 typedef struct bmp_widget_t bmp_widget_t;
 typedef struct comboBox_widget_t comboBox_widget_t;
 typedef struct comboBox_item_t comboBox_item_t;
+typedef struct xbm_t xbm_t;
 
 struct selectable_widget_t {
   widgetStateType state;
@@ -70,23 +77,25 @@ struct editable_widget_t {
 struct button_widget_t {
   union{
     struct{
-      char* displayString;
       uint8_t stringStart;
+      AlignType textAlign;
       const uint8_t* font;
+      char* displayString;
       int32_t last_value;
     };
     struct{
-      const uint8_t* xbm;
-      const uint8_t* last_xbm;
+      const xbm_t* xbm;
+      const xbm_t* last_xbm;
     };
   };
+  AlignType dispAlign;
   int (*action)(widget_t*);
   selectable_widget_t selectable;
 };
 
 struct bmp_widget_t {
-  const uint8_t* xbm;
-  const uint8_t* last_xbm;
+  const xbm_t* xbm;
+  const xbm_t* last_xbm;
 };
 
 struct comboBox_widget_t {
@@ -128,11 +137,16 @@ struct widget_t
   void* content;
 };
 
+struct xbm_t{
+  const uint8_t width;
+  const uint8_t height;
+  const uint8_t * xbm;
+};
 displayOnly_widget_t * extractDisplayPartFromWidget(widget_t *w);
 editable_widget_t * extractEditablePartFromWidget(widget_t *);
 selectable_widget_t * extractSelectablePartFromWidget(widget_t *w);
 
-void newWidget(widget_t **new, widgetType type, struct screen_t *scr);
+void newWidget(widget_t **new, widgetType type, struct screen_t *scr, void ** content);
 editable_widget_t *newEditable(widgetType type);
 comboBox_item_t *newComboItem(void);
 
@@ -150,6 +164,7 @@ int comboBoxProcessInput(widget_t* w, RE_Rotation_t, RE_State_t *);
 uint8_t comboBoxDraw(widget_t *w);
 void newComboScreen(widget_t *w, char *label, uint8_t actionScreen, comboBox_item_t **newItem);
 void newComboEditable(widget_t *w, char *label, editable_widget_t **newEdit, comboBox_item_t **newItem);
+void newComboEditableString(widget_t *w, char *label, editable_widget_t **newEdit, comboBox_item_t **newItem, char *dispBf);
 void newComboMultiOption(widget_t *w, char *label, editable_widget_t **newEdit, comboBox_item_t **newItem);
 void newComboAction(widget_t *w, char *label, int (*action)(widget_t *w, RE_Rotation_t input), comboBox_item_t **newItem);
 void comboResetIndex(widget_t *w);

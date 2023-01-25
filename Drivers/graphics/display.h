@@ -76,8 +76,8 @@ typedef enum{
   c_page          = 0xB0,
   c_contrast      = 0x81,
   c_pump_1306_set = 0x8D,
-  c_pump_off      = 0x10,
-  c_pump_on       = 0x14,
+  c_pump_1306_off = 0x10,
+  c_pump_1306_on  = 0x14,
   c_addr_mode     = 0x20,
   c_pump_1106_adj = 0x30,
   c_remap_off     = 0xA0,
@@ -88,6 +88,8 @@ typedef enum{
   c_inv_on        = 0xA7,
   c_mux_ratio     = 0xA8,
   c_pump_1106_set = 0xAD,
+  c_pump_1106_off = 0x8A,
+  c_pump_1106_on  = 0x8B,
   c_disp_off      = 0xAE,
   c_disp_on       = 0xAF,
   c_offset        = 0xD3,
@@ -213,7 +215,6 @@ void lcd_init(DMA_HandleTypeDef *dma);
 void Oled_error_init(void);
 void fatalError(uint8_t type);
 void lcd_write(uint8_t* data, uint16_t count, uint8_t mode);
-void pset(uint8_t x, uint8_t y, bool c);
 void update_display(void);
 void display_dma_abort(void);
 void update_display_ErrorHandler(void);
@@ -223,6 +224,9 @@ uint8_t getDisplayPower(void);
 void setDisplayContrastOrBrightness(uint8_t value);
 void setDisplayXflip(uint8_t f);
 void setDisplayYflip(uint8_t f);
+void setDisplayClk(uint8_t clk);
+void setDisplayVcom(uint8_t vcom);
+void setDisplayPrecharge(uint8_t pre);
 #ifdef ST7565
 void setDisplayResRatio(uint8_t r);
 #endif

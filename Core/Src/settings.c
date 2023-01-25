@@ -31,6 +31,9 @@ const settings_t defaultSettings = {
   .displayOffset        = DISPLAY_OFFSET,
   .displayXflip         = 1,
 #ifdef SSD1306
+  .displayClk           = 0xF0,
+  .displayVcom          = 0x44,
+  .displayPrecharge     = 0x3C,
   .displayYflip         = 1,
 #elif defined ST7565
   .displayYflip         = 0,
@@ -54,6 +57,7 @@ const settings_t defaultSettings = {
   .EncoderMode          = RE_Mode_Forward,
   .debugEnabled         = disable,
   .language             = lang_english,
+  .clone_fix            = disable,
   .state                = initialized,
 };
 
@@ -196,7 +200,7 @@ void checkSettings(void){
 
   // Save from menu
   if(systemSettings.save_Flag && allowSave){
-    switch(systemSettings.save_Flag){
+    switch(systemSettings.save_Flag & reboot_mask){
       case save_Settings:
         saveSettings(keepProfiles);
         break;
@@ -224,7 +228,7 @@ void checkSettings(void){
       default:
         Error_Handler();
     }
-    if(systemSettings.save_Flag>=reset_Profiles){       // If save flag indicates any resetting mode, reboot
+    if(systemSettings.save_Flag>=reboot_after_save){       // If save flag indicates any resetting mode, reboot
       NVIC_SystemReset();
     }
     systemSettings.save_Flag=0;
@@ -232,7 +236,7 @@ void checkSettings(void){
   }
 
   // Auto save on content change
-  if( (systemSettings.setupMode==enable) || (isIronInCalibrationMode()) || (getIronErrorFlags().safeMode) || ((CurrentTime-lastCheckTime)<999)){
+  if( (systemSettings.setupMode==enable) || (getIronCalibrationMode()) || (getIronErrorFlags().safeMode) || ((CurrentTime-lastCheckTime)<999)){
     return;
   }
 
@@ -273,7 +277,7 @@ void checkSettings(void){
 
   #ifdef HAS_BATTERY
   bkpRamData.values.lastProfile = systemSettings.currentProfile;
-  if(!isIronInCalibrationMode() && scr_index != screen_debug) // don't persist the temperature while calibration is in progress or in the debug screen
+  if(!getIronCalibrationMode() && scr_index != screen_debug) // don't persist the temperature while calibration is in progress or in the debug screen
   {
     bkpRamData.values.lastTipTemp[systemSettings.currentProfile] = getUserSetTemperature();
   }
@@ -315,7 +319,7 @@ static void eraseFlashPages(uint32_t pageAddress, uint32_t numPages)
 
   // Ensure flash was erased
   for (uint32_t i = 0u; i < (numPages * FLASH_PAGE_SIZE / sizeof(int32_t)); i++) {
-    if( *((uint32_t*)(pageAddress + i)) != 0xFFFFFFFF){
+    if( *((uint32_t*)pageAddress+i) != 0xFFFFFFFF){
       Flash_error();
     }
   }
@@ -823,6 +827,8 @@ static void resetCurrentProfile(void){
   systemSettings.Profile.tempUnit                   = mode_Celsius;
   systemSettings.Profile.shakeFiltering             = disable;
   systemSettings.Profile.WakeInputMode              = mode_shake;
+  systemSettings.Profile.smartActiveEnabled          = disable;
+  systemSettings.Profile.smartActiveLoad             = 5;
   systemSettings.Profile.StandMode                  = mode_sleep;
   systemSettings.Profile.state                      = initialized;
 }

@@ -19,7 +19,14 @@
 #include "display.h"
 #include "gui.h"
 #include "screen.h"
-#include "myTest.h"
+#include "display_test.h"
+
+#if (__CORTEX_M >= 3)
+#include "stm32f1xx_it.h"
+#else
+#include "stm32f0xx_it.h"
+#endif
+
 #ifdef ENABLE_ADDON_FUME_EXTRACTOR
 #include "addon_fume_extractor.h"
 #endif
@@ -65,11 +72,11 @@ struct mallinfo mi;
 uint32_t max_allocated;
 #endif
 
-// Allocate max possible ram, then release it. This fill the heap pool and avoids internal fragmentation due (ST's?) poor malloc implementation.
+// Allocate max possible ram, then release it. This fills the heap pool and avoids internal fragmentation due (ST's?) poor malloc implementation.
 void malloc_fragmentation_fix(void){
   uint32_t *ptr = NULL;
   uint32_t try=20480; // Current ram usage is ~5KB, so we should have have another 5/15KB free, depending on the stm32 used.
-  while(!ptr && try){
+  while(ptr==NULL && try){
     ptr = _malloc(try);
     try-=16;
   }
@@ -83,13 +90,16 @@ void initBeforeMCUConfiguration(void)
 {
   malloc_fragmentation_fix();
 
-  #if defined DEBUG && !defined STM32F072xB
-    DebugOpts();          // Enable debug options in Debug build
+
+#ifdef DEBUG
+  DebugOpts();                                      // Enable debug options in Debug build
+#if (__CORTEX_M >= 3)                               // Cortex-M0 doesn't have DWT
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // Enable DWT
     DWT->CYCCNT = 0;                                // Clear counter
     DWT->CTRL = DWT_CTRL_CYCCNTENA_Msk;             // Enable counter
     // Now CPU cycles can be read in DWT->CYCCNT;
-  #endif
+#endif
+#endif
 }
 
 void InitAfterMCUConfiguration(void){
@@ -113,20 +123,29 @@ void InitAfterMCUConfiguration(void){
 #endif
 
     guiInit();
-    ADC_Init(&ADC_DEVICE);
     buzzer_init();
     restoreSettings();
+    ADC_Init(&ADC_DEVICE);
     setDisplayContrastOrBrightness(systemSettings.settings.contrastOrBrightness);
     setDisplayXflip(systemSettings.settings.displayXflip);
     setDisplayYflip(systemSettings.settings.displayYflip);
-#ifdef ST7565
-    setDisplayResRatio(systemSettings.settings.displayResRatio);
+#ifndef ST7565                                                          // Only for SSD1306
+    setDisplayPower(disable);
+    setDisplayClk(systemSettings.settings.displayClk);
+    setDisplayVcom(systemSettings.settings.displayVcom);
+    setDisplayPrecharge(systemSettings.settings.displayPrecharge);
+    setDisplayPower(enable);
+#elif defined ST7565
+    setDisplayResRatio(systemSettings.settings.displayResRatio);        // Only for ST7565
 #endif
     ironInit(&READ_TIMER, &PWM_TIMER,PWM_CHANNEL);
     RE_Init((RE_State_t *)&RE1_Data, ENC_L_GPIO_Port, ENC_L_Pin, ENC_R_GPIO_Port, ENC_R_Pin, ENC_SW_GPIO_Port, ENC_SW_Pin);
     oled_init(&RE_Get,&RE1_Data);
 #ifdef HAS_BATTERY
     restoreLastSessionSettings();
+#endif
+#ifdef RUN_DISPLAY_TEST
+    display_test();
 #endif
 }
 
@@ -188,6 +207,63 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *_htim){
     }
   }
 }
+
+
+/* copy hardfault args to known storage before calling the final handler*/
+__attribute__((used)) void HardFault_Handler_cp(unsigned int * hardfault_args, unsigned int _r4, unsigned int _r5, unsigned int _r6){
+  for(uint8_t i=0; i<9; i++){
+    hardFault_args[i]=hardfault_args[i];
+  }
+  r4=_r4;
+  r5=_r5;
+  r6=_r6;
+
+  /*
+  printf ("\n[Hard Fault]\n"); // After Joseph Yiu
+  printf ("r0 = %08X, r1 = %08X, r2 = %08X, r3 = %08X\n", hardfault_args[0], hardfault_args[1], hardfault_args[2], hardfault_args[3]);
+  printf ("r4 = %08X, r5 = %08X, r6 = %08X, sp = %08X\n", r4, r5, r6, (unsigned int)&hardfault_args[8]);
+  printf ("r12= %08X, lr = %08X, pc = %08X, psr= %08X\n", hardfault_args[4], hardfault_args[5], hardfault_args[6], hardfault_args[7]);
+  if (__CORTEX_M >= 3){
+    printf ("bfar=%08X, cfsr=%08X, hfsr=%08X, dfsr=%08X, afsr=%08X\n",
+        *((volatile unsigned int *)(0xE000ED38)),
+        *((volatile unsigned int *)(0xE000ED28)),
+        *((volatile unsigned int *)(0xE000ED2C)),
+        *((volatile unsigned int *)(0xE000ED30)),
+        *((volatile unsigned int *)(0xE000ED3C)) );
+  }
+  */
+  HardFault_Handler();
+}
+
+/* Initial hard fault trap to capture stack data*/
+__attribute__((used)) __attribute__((naked)) void HardFault_Handler_(void){
+  asm(
+#if (__CORTEX_M >=3)
+      "TST     lr, #4                       \n"
+      "ITE     EQ                           \n"
+      "MRSEQ   R0, MSP                      \n" //Read MSP (Main)
+      "MRSNE   R0, PSP                      \n" //Read PSP (Process)
+      "MOV     R1, R4                       \n"
+      "MOV     R2, R5                       \n"
+      "MOV     R3, R6                       \n"
+      "B       HardFault_Handler_cp         \n"
+#else
+      "MOV     R1, LR                       \n"
+      "LDR     R0, =HardFault_Handler_cp    \n"
+      "MOV     LR, R0                       \n"
+      "MOVS    R0, #4                       \n"     // Determine correct stack
+      "TST     R0, R1                       \n"
+      "MRS     R0, MSP                      \n"     // Read MSP (Main)
+      "BEQ     .+6                          \n"     // BEQ 2, MRS R0,PSP 4
+      "MRS     R0, PSP                      \n"     // Read PSP (Process)
+      "MOV     R1, R4                       \n"     // Registers R4-R6, as parameters 2-4 of the function called
+      "MOV     R2, R5                       \n"
+      "MOV     R3, R6                       \n"     // sourcer32@gmail.com
+      "BX      LR                           \n"
+#endif
+  );
+}
+
 
 void CrashErrorHandler(char * file, int line)
 {

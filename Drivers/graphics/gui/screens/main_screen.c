@@ -28,82 +28,103 @@ static char *tipNames[NUM_TIPS];
 enum mode{  main_none=0, main_irontemp, main_error, main_setpoint, main_tipselect };
 enum{ status_ok=0x20, status_error };
 enum { temp_numeric, temp_graph };
-const uint8_t shakeXBM[] ={
-  9, 9,
-  0x70, 0x00, 0x80, 0x00, 0x30, 0x01, 0x40, 0x01, 0x45, 0x01, 0x05, 0x00,
-  0x19, 0x00, 0x02, 0x00, 0x1C, 0x00, };
-
-
-const uint8_t tempXBM[] ={
-  5, 9,
-  0x04, 0x0A, 0x0A, 0x0A, 0x0A, 0x0E, 0x1F, 0x1F, 0x0E, };
-
+xbm_t shakeXBM = {
+  .width=9,
+  .height=9,
+  .xbm=(const uint8_t[]){
+    0x70, 0x00, 0x80, 0x00, 0x30, 0x01, 0x40, 0x01, 0x45, 0x01, 0x05, 0x00,
+    0x19, 0x00, 0x02, 0x00, 0x1C, 0x00,
+  },
+};
+xbm_t tempXBM = {
+  .width=5,
+  .height=9,
+  .xbm=(const uint8_t[]){
+    0x04, 0x0A, 0x0A, 0x0A, 0x0A, 0x0E, 0x1F, 0x1F, 0x0E,
+  },
+};
 #ifdef USE_VIN
-const uint8_t voltXBM[] ={
-  6, 9,
-  0x20, 0x18, 0x0C, 0x06, 0x3F, 0x18, 0x0C, 0x06, 0x01, };
+xbm_t voltXBM = {
+  .width=6,
+  .height=9,
+  .xbm=(const uint8_t[]){
+    0x20, 0x18, 0x0C, 0x06, 0x3F, 0x18, 0x0C, 0x06, 0x01,
+  },
+};
 #endif
-
-const uint8_t warningXBM[] ={
-  9, 8,
-  0x10, 0x00, 0x28, 0x00, 0x54, 0x00, 0x54, 0x00, 0x82, 0x00, 0x92, 0x00,
-  0x01, 0x01, 0xFF, 0x01, };
-
+xbm_t warningXBM = {
+  .width=6,
+  .height=9,
+  .xbm=(uint8_t*)(const uint8_t[]){
+    0x10, 0x00, 0x28, 0x00, 0x54, 0x00, 0x54, 0x00, 0x82, 0x00, 0x92, 0x00,
+    0x01, 0x01, 0xFF, 0x01,
+  },
+};
 #ifdef SCREENSAVER
-const uint8_t ScrSaverXBM[] = {
- 60, 49,
- 0x00, 0x00, 0x00, 0xC0, 0xE1, 0x3F, 0x00, 0x00, 0x00, 0xF0, 0xFF, 0xFF,
- 0x1F, 0xFF, 0x00, 0x00, 0x00, 0x02, 0x7E, 0x00, 0x60, 0xFC, 0x01, 0x00,
- 0x80, 0xFF, 0xFF, 0xFF, 0x1F, 0xFB, 0x03, 0x00, 0xE0, 0x1F, 0xFF, 0x1F,
- 0xC0, 0xE4, 0x03, 0x00, 0xF0, 0xF3, 0xF1, 0xEF, 0x3F, 0xD9, 0x07, 0x00,
- 0xF8, 0xF9, 0xFF, 0xEF, 0xFF, 0xF4, 0x0F, 0x00, 0xF8, 0xFD, 0xFB, 0xFF,
- 0xFF, 0xEB, 0x0F, 0x00, 0xF8, 0xFF, 0xF7, 0xFF, 0x80, 0xFF, 0x1F, 0x00,
- 0xF8, 0xFF, 0xFF, 0x3F, 0x00, 0xFE, 0x1F, 0x00, 0xFC, 0x03, 0xFC, 0x0F,
- 0x03, 0xF8, 0x3F, 0x00, 0x7E, 0x01, 0xF8, 0xC7, 0x01, 0x98, 0x0F, 0x00,
- 0x03, 0x01, 0xC0, 0x27, 0x00, 0x98, 0x0F, 0x00, 0xFC, 0x7F, 0xC0, 0x07,
- 0xEE, 0x6F, 0xE0, 0x00, 0xF8, 0xFF, 0xE3, 0x8F, 0x8F, 0x1F, 0xC0, 0x01,
- 0x05, 0xFE, 0xF3, 0xFF, 0x1F, 0x00, 0x8F, 0x05, 0x01, 0xE0, 0xF3, 0xFF,
- 0x3F, 0xE0, 0x1C, 0x05, 0xFF, 0xE0, 0xF1, 0xFF, 0xFF, 0x7F, 0x3C, 0x0D,
- 0xBF, 0xF9, 0xF8, 0x8F, 0xFE, 0x1F, 0x38, 0x0D, 0x9D, 0x7F, 0xFC, 0x0F,
- 0xE0, 0x07, 0x21, 0x0D, 0x1F, 0x3F, 0xFC, 0x33, 0xFF, 0xC1, 0x21, 0x05,
- 0x0C, 0x07, 0xFC, 0x20, 0x3F, 0xF0, 0x38, 0x05, 0x0B, 0xF6, 0xF8, 0x07,
- 0x07, 0x78, 0xBC, 0x00, 0x0E, 0xFC, 0xC3, 0x7F, 0xC0, 0x19, 0x7C, 0x02,
- 0x0E, 0xE0, 0xE7, 0x07, 0xF8, 0x00, 0xBE, 0x01, 0x0E, 0x00, 0x00, 0x00,
- 0x7C, 0x00, 0x7F, 0x00, 0x0E, 0x06, 0x00, 0xF8, 0x1C, 0x10, 0x7F, 0x00,
- 0x0E, 0xE4, 0x71, 0xFC, 0x00, 0x98, 0x3F, 0x00, 0x0E, 0xE4, 0x71, 0x3E,
- 0x80, 0xC9, 0x3F, 0x00, 0x0E, 0x00, 0x00, 0x00, 0xE0, 0xE1, 0x1F, 0x00,
- 0x0E, 0x00, 0x00, 0x00, 0xF8, 0xE3, 0x1F, 0x00, 0x0E, 0x00, 0x00, 0x80,
- 0xF9, 0xF0, 0x0F, 0x00, 0x0E, 0x00, 0x00, 0xF0, 0x79, 0xFC, 0x07, 0x00,
- 0x1E, 0x00, 0x80, 0xF9, 0x33, 0xFE, 0x03, 0x00, 0x1E, 0x92, 0xF3, 0xF9,
- 0x03, 0xFF, 0x01, 0x00, 0x3E, 0x32, 0xF3, 0xF9, 0xC1, 0xBB, 0x00, 0x00,
- 0x7E, 0x20, 0xE7, 0x19, 0xF0, 0x4C, 0x00, 0x00, 0xFE, 0x00, 0x00, 0x00,
- 0x3E, 0x13, 0x00, 0x00, 0xFE, 0x0F, 0x00, 0xE0, 0xC7, 0x0C, 0x00, 0x00,
- 0x7E, 0xFF, 0xFF, 0xFF, 0x39, 0x03, 0x00, 0x00, 0xFE, 0xFE, 0xFF, 0x3F,
- 0xE6, 0x00, 0x00, 0x00, 0xEE, 0xF1, 0x7F, 0x40, 0x3C, 0x00, 0x00, 0x00,
- 0xDE, 0x1F, 0xC0, 0x83, 0x07, 0x00, 0x00, 0x00, 0x3E, 0xFF, 0x0F, 0xFC,
- 0x01, 0x00, 0x00, 0x00, 0xFC, 0x08, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x00,
- 0xFC, 0xFF, 0xFF, 0x1F, 0x00, 0x00, 0x00, 0x00, 0xF8, 0xFF, 0xFF, 0x01,
- 0x00, 0x00, 0x00, 0x00, 0xE0, 0xFF, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00,
- 0x80, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, };
+xbm_t ScrSaverXBM = {
+  .width=60,
+  .height=49,
+  .xbm=(const uint8_t[]){
+    0x00, 0x00, 0x00, 0xC0, 0xE1, 0x3F, 0x00, 0x00, 0x00, 0xF0, 0xFF, 0xFF,
+    0x1F, 0xFF, 0x00, 0x00, 0x00, 0x02, 0x7E, 0x00, 0x60, 0xFC, 0x01, 0x00,
+    0x80, 0xFF, 0xFF, 0xFF, 0x1F, 0xFB, 0x03, 0x00, 0xE0, 0x1F, 0xFF, 0x1F,
+    0xC0, 0xE4, 0x03, 0x00, 0xF0, 0xF3, 0xF1, 0xEF, 0x3F, 0xD9, 0x07, 0x00,
+    0xF8, 0xF9, 0xFF, 0xEF, 0xFF, 0xF4, 0x0F, 0x00, 0xF8, 0xFD, 0xFB, 0xFF,
+    0xFF, 0xEB, 0x0F, 0x00, 0xF8, 0xFF, 0xF7, 0xFF, 0x80, 0xFF, 0x1F, 0x00,
+    0xF8, 0xFF, 0xFF, 0x3F, 0x00, 0xFE, 0x1F, 0x00, 0xFC, 0x03, 0xFC, 0x0F,
+    0x03, 0xF8, 0x3F, 0x00, 0x7E, 0x01, 0xF8, 0xC7, 0x01, 0x98, 0x0F, 0x00,
+    0x03, 0x01, 0xC0, 0x27, 0x00, 0x98, 0x0F, 0x00, 0xFC, 0x7F, 0xC0, 0x07,
+    0xEE, 0x6F, 0xE0, 0x00, 0xF8, 0xFF, 0xE3, 0x8F, 0x8F, 0x1F, 0xC0, 0x01,
+    0x05, 0xFE, 0xF3, 0xFF, 0x1F, 0x00, 0x8F, 0x05, 0x01, 0xE0, 0xF3, 0xFF,
+    0x3F, 0xE0, 0x1C, 0x05, 0xFF, 0xE0, 0xF1, 0xFF, 0xFF, 0x7F, 0x3C, 0x0D,
+    0xBF, 0xF9, 0xF8, 0x8F, 0xFE, 0x1F, 0x38, 0x0D, 0x9D, 0x7F, 0xFC, 0x0F,
+    0xE0, 0x07, 0x21, 0x0D, 0x1F, 0x3F, 0xFC, 0x33, 0xFF, 0xC1, 0x21, 0x05,
+    0x0C, 0x07, 0xFC, 0x20, 0x3F, 0xF0, 0x38, 0x05, 0x0B, 0xF6, 0xF8, 0x07,
+    0x07, 0x78, 0xBC, 0x00, 0x0E, 0xFC, 0xC3, 0x7F, 0xC0, 0x19, 0x7C, 0x02,
+    0x0E, 0xE0, 0xE7, 0x07, 0xF8, 0x00, 0xBE, 0x01, 0x0E, 0x00, 0x00, 0x00,
+    0x7C, 0x00, 0x7F, 0x00, 0x0E, 0x06, 0x00, 0xF8, 0x1C, 0x10, 0x7F, 0x00,
+    0x0E, 0xE4, 0x71, 0xFC, 0x00, 0x98, 0x3F, 0x00, 0x0E, 0xE4, 0x71, 0x3E,
+    0x80, 0xC9, 0x3F, 0x00, 0x0E, 0x00, 0x00, 0x00, 0xE0, 0xE1, 0x1F, 0x00,
+    0x0E, 0x00, 0x00, 0x00, 0xF8, 0xE3, 0x1F, 0x00, 0x0E, 0x00, 0x00, 0x80,
+    0xF9, 0xF0, 0x0F, 0x00, 0x0E, 0x00, 0x00, 0xF0, 0x79, 0xFC, 0x07, 0x00,
+    0x1E, 0x00, 0x80, 0xF9, 0x33, 0xFE, 0x03, 0x00, 0x1E, 0x92, 0xF3, 0xF9,
+    0x03, 0xFF, 0x01, 0x00, 0x3E, 0x32, 0xF3, 0xF9, 0xC1, 0xBB, 0x00, 0x00,
+    0x7E, 0x20, 0xE7, 0x19, 0xF0, 0x4C, 0x00, 0x00, 0xFE, 0x00, 0x00, 0x00,
+    0x3E, 0x13, 0x00, 0x00, 0xFE, 0x0F, 0x00, 0xE0, 0xC7, 0x0C, 0x00, 0x00,
+    0x7E, 0xFF, 0xFF, 0xFF, 0x39, 0x03, 0x00, 0x00, 0xFE, 0xFE, 0xFF, 0x3F,
+    0xE6, 0x00, 0x00, 0x00, 0xEE, 0xF1, 0x7F, 0x40, 0x3C, 0x00, 0x00, 0x00,
+    0xDE, 0x1F, 0xC0, 0x83, 0x07, 0x00, 0x00, 0x00, 0x3E, 0xFF, 0x0F, 0xFC,
+    0x01, 0x00, 0x00, 0x00, 0xFC, 0x08, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x00,
+    0xFC, 0xFF, 0xFF, 0x1F, 0x00, 0x00, 0x00, 0x00, 0xF8, 0xFF, 0xFF, 0x01,
+    0x00, 0x00, 0x00, 0x00, 0xE0, 0xFF, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x80, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+ },
+};
 #endif
-
-const uint8_t iron[] = {
-  105, 7,
-  0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-  0x07, 0x00, 0x01, 0x3E, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x1C, 0x00, 0x01, 0x3E, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0xFC, 0x00, 0x01, 0x3E, 0xF8, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFC, 0x01, 0x01, 0x3E, 0xF8, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFC, 0x00, 0x01, 0x3E,
-  0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1C, 0x00,
-  0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-  0x07, 0x00, };
-
-const uint8_t x_mark[] = {
-  12,15,
-  0x03, 0x0C, 0x07, 0x0E, 0x06, 0x06, 0x0C, 0x03, 0x9C, 0x03, 0xF8, 0x01,
+ xbm_t ironXBM = {
+  .width=105,
+  .height=7,
+  .xbm=(const uint8_t[]){
+    0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0x07, 0x00, 0x01, 0x3E, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x1C, 0x00, 0x01, 0x3E, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xFC, 0x00, 0x01, 0x3E, 0xF8, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFC, 0x01, 0x01, 0x3E, 0xF8, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFC, 0x00, 0x01, 0x3E,
+    0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1C, 0x00,
+    0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0x07, 0x00,
+  },
+};
+xbm_t x_markXBM = {
+  .width=12,
+  .height=15,
+  .xbm=(const uint8_t[]){
+    0x03, 0x0C, 0x07, 0x0E, 0x06, 0x06, 0x0C, 0x03, 0x9C, 0x03, 0xF8, 0x01,
     0xF0, 0x00, 0x60, 0x00, 0xF0, 0x00, 0xF8, 0x01, 0x9C, 0x03, 0x0C, 0x03,
-    0x06, 0x06, 0x07, 0x0E, 0x03, 0x0C };
+    0x06, 0x06, 0x07, 0x0E, 0x03, 0x0C,
+  },
+};
 //-------------------------------------------------------------------------------------------------------------------------------
 // Main screen widgets
 //-------------------------------------------------------------------------------------------------------------------------------
@@ -129,7 +150,7 @@ static struct{
   uint8_t currentMode;                    // Current screen mode (iron_temp, setpoint, tip_select)
   uint8_t displayMode;                    // Iron temp display mode (temp_numeric, temp_graph)
   uint8_t updateReadings;                 // Flag to update power, tip, ambient, voltage widgets
-  uint8_t boost_enable;                   // Flag used only for boost mode while in plot graph display
+  uint8_t boost_allow;                    // Flag used only for boost mode while in plot graph display
   int16_t lastTip;                        // Last stored tip temperature for widget
   #ifdef USE_NTC
   int16_t lastAmb;                        // Last stored ambient temperature for widget
@@ -214,7 +235,7 @@ static void * main_screen_getAmbTemp() {
 }
 #endif
 
-static void updateIronPower() {
+void updateIronPower(void) {
 
   static uint32_t stored=0;
   static uint32_t updateTim;
@@ -233,7 +254,7 @@ static void updateIronPower() {
 }
 
 static void setMainWidget(widget_t* w){
-  Screen_main.refresh=screen_Erase;
+  Screen_main.state=screen_Erase;
   Screen_main.current_widget=w;
   widgetEnable(w);
 }
@@ -272,10 +293,10 @@ void updateScreenSaver(void){
     screenSaver.timer=current_time;
     screenSaver.x+=screenSaver.xAdd;
     screenSaver.y+=screenSaver.yAdd;
-    if(screenSaver.x<-(ScrSaverXBM[0]+10) || screenSaver.x>(displayWidth+10)){
+    if(screenSaver.x<-(ScrSaverXBM.width+10) || screenSaver.x>(displayWidth+10)){
       screenSaver.xAdd = -screenSaver.xAdd;
     }
-    if(screenSaver.y<-(ScrSaverXBM[1]+10) || screenSaver.y>(displayHeight+10)){
+    if(screenSaver.y<-(ScrSaverXBM.height+10) || screenSaver.y>(displayHeight+10)){
       screenSaver.yAdd = -screenSaver.yAdd;
     }
     screenSaver.update=1;
@@ -289,13 +310,13 @@ int8_t switchScreenMode(void){
     resetScreenTimer();
     resetModeTimer();
     plot.enabled = (mainScr.displayMode==temp_graph);
-    Screen_main.refresh=screen_Erase;
+    Screen_main.state=screen_Erase;
     mainScr.updateReadings=1;
     switch(mainScr.setMode){
 
       case main_irontemp:
         widgetDisable(Widget_SetPoint);
-        mainScr.boost_enable=0;
+        mainScr.boost_allow=0;
         if(mainScr.ironStatus!=status_error){
           if(!plot.enabled){
             setMainWidget(Widget_IronTemp);
@@ -322,9 +343,9 @@ int8_t switchScreenMode(void){
     }
     mainScr.currentMode=mainScr.setMode;
     mainScr.setMode=main_none;
-    return 1;                                 // Changed mode
+    return 1;                                                             // Changed mode
   }
-  return 0;                                   // No changes
+  return 0;                                                               // No changes
 }
 
 int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *state) {
@@ -342,14 +363,14 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
       mainScr.shakeActive=3;
     }
     if(mainScr.ironStatus!=status_error || mainScr.lastError != ironErrorFlags.Flags){  // If error appeared or changed
-      wakeOledDim();                                                          		// Wake up screen
+      wakeOledDim();                                                      // Wake up screen
       mainScr.ironStatus = status_error;
       mainScr.lastError=ironErrorFlags.Flags;
     }
   }
-  else if(mainScr.ironStatus != status_ok){                                   // If error is gone
+  else if(mainScr.ironStatus != status_ok){                               // If error is gone
     mainScr.ironStatus = status_ok;
-    wakeOledDim();                                                            // Wake up screen
+    wakeOledDim();                                                        // Wake up screen
   }
 
 
@@ -359,15 +380,15 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
   }
 
   if(input!=Rotate_Nothing){
-    resetScreenTimer();                                                     // Reset screen idle timer
-    if(getDisplayPower()==disable){                                            // If oled off, block user action
+    resetScreenTimer();                                                   // Reset screen idle timer
+    if(getDisplayPower()==disable){                                       // If oled off, block user action
       input=Rotate_Nothing;
     }
-    wakeOledDim();                                                          // But  wake up screen
+    wakeOledDim();                                                        // But  wake up screen
   }
 
   if(systemSettings.settings.dim_mode!=dim_always && currentIronMode>mode_standby){  // If dim not enabled in all modes
-    wakeOledDim();																															// Refresh timeout if running
+    wakeOledDim();                                                        // Refresh timeout if running
   }
 
   handleOledDim();
@@ -381,12 +402,28 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
     mainScr.shakeActive=3; // Clear
   }
 
+  // If at main temperature screen
+  if(mainScr.currentMode == main_irontemp && (input == Rotate_Increment || input == Rotate_Decrement || input == Click)){
+    if(getIronWakeSource()==wakeSrc_Button && !checkIronModeTimer(250)){  // To avoid unwanted mode changing, ignore action if iron mode was set <250ms ago
+        input = Rotate_Nothing;
+      }
+      else if(currentIronMode==mode_boost){                               // If iron in boost mode, return to normal mode, don't process the input
+        setCurrentMode(mode_run);
+        input = Rotate_Nothing;
+      }
+      else if(currentIronMode!=mode_run){
+        IronWake(wakeSrc_Button);
+        if(getCurrentMode()==mode_run){                                   // If iron in low power mode, send wake signal. If mode changed, don't process the input
+          input = Rotate_Nothing;
+        }
+      }
+  }
   // Handle main screen
   switch(mainScr.currentMode){
     case main_irontemp:
 
-      if(mainScr.ironStatus!=status_ok){                // When the screen goes to error state
-        mainScr.setMode=main_error;                     // Set error screen
+      if(mainScr.ironStatus!=status_ok){                                  // When the screen goes to error state
+        mainScr.setMode=main_error;                                       // Set error screen
         break;
       }
 
@@ -410,47 +447,25 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
 
         case Rotate_Increment:
         case Rotate_Decrement:
-          if((currentIronMode!=mode_run && checkIronModeTimer(250)) || currentIronMode==mode_run){  // To avoid unwanted mode changing, ignore rotation if not in run mode and set <250ms ago
-            if(currentIronMode==mode_boost){
-              setCurrentMode(mode_run);
-              break;
+          if(mainScr.displayMode==temp_graph){
+            if(!checkMainScreenModeTimer(500)){                             // If last rotation step happened <500ms ago, disable boost allow flag and modify the setpoint.
+              mainScr.boost_allow=0;                                        // Disable boost allow flag
+              widgetEnable(Widget_SetPoint);                                // Enable the setpoint widget, but don't set it as current widget (Dirty hack), just to be able to process the input
+              default_widgetProcessInput(Widget_SetPoint, input, state);    // If the widget is disabled, the widget process will skip it. It will be disabled before drawing in drawMisc function
             }
-            else if(currentIronMode!=mode_run){
-              IronWake(wakeButton);
-              if(getCurrentMode()==mode_run){                                 // If mode changed, don't process the click
-                break;
-              }
+            else{                                                           // If last step was more than 500ms ago, enable boost flag
+              mainScr.boost_allow=1;                                        // Set boost flag. Click within 1 second to enable boost mode
             }
-            if(mainScr.displayMode==temp_graph){
-              if(!checkMainScreenModeTimer(1000)){                            // If last step happened less than 1 second ago, disable boost flag and modify the setpoint.
-                mainScr.boost_enable=0;                                       // Disable boost flag
-                widgetEnable(Widget_SetPoint);                                // Enable the setpoint widget, but don't set it as current widget (Dirty hack)
-                default_widgetProcessInput(Widget_SetPoint, input, state);    // Just to be able to process the input. If the widget is disabled, the widget process will skip it. It will be disabled before drawing in drawMisc function
-              }
-              else{                                                           // If last step was more than 1 second ago, enable boost flag
-                mainScr.boost_enable=1;                                       // Set boost flag. Click within 1 second to enable boost mode
-              }
-              resetModeTimer();                                               // Reset mode timer
-            }
-            else{
-              mainScr.setMode=main_setpoint;
-            }
+            resetModeTimer();                                               // Reset mode timer
+          }
+          else{
+            mainScr.setMode=main_setpoint;
           }
           return -1;
           break;
 
         case Click:
-          if(currentIronMode==mode_boost){
-            setCurrentMode(mode_run);
-            break;
-          }
-          if(currentIronMode!=mode_run){
-            IronWake(wakeButton);
-            if(getCurrentMode()==mode_run){                                 // If mode changed, don't process the click
-              break;
-            }
-          }
-          scr->refresh=screen_Erase;
+          scr->state=screen_Erase;
           if(mainScr.displayMode==temp_numeric){
             mainScr.updateReadings=1;
             mainScr.displayMode=temp_graph;
@@ -459,16 +474,17 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
             plot.update=1;
           }
           else if(mainScr.displayMode==temp_graph){
-            if(checkMainScreenModeTimer(1000)){                             // If more than 1 second since last rotation, disable boost flag
-              mainScr.boost_enable=0;
+            if(checkMainScreenModeTimer(1000)){                             // If more than 1 second since last rotation, disable boost allow flag
+              mainScr.boost_allow=0;
             }
-            if(mainScr.boost_enable && currentIronMode==mode_run){             // If boost flag enabled and iron running
-              mainScr.boost_enable=0;                                       // Clear flag
+            if(mainScr.boost_allow && currentIronMode==mode_run){           // If boost flag enabled and iron running
+              mainScr.boost_allow=0;                                        // Clear flag
               setCurrentMode(mode_boost);                                   // Set boost mode
             }
             else{
-              mainScr.updateReadings=1;
               mainScr.displayMode=temp_numeric;                             // Else, switch to numeric display mode
+              mainScr.updateReadings=1;
+              mainScr.boost_allow=0;                                        // Clear flag
               widgetEnable(Widget_IronTemp);
               plot.enabled=0;
             }
@@ -504,7 +520,7 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
 
 
     case main_tipselect:
-      if(mainScr.ironStatus==status_error){  // If error appears while adjusting tip select, it needs to update now to avoid overlapping problems
+      if(mainScr.ironStatus==status_error){                                 // If error appears while in tip selection, it needs to update now to avoid overlapping problems
         plot.enabled = 0;
         widgetDisable(Widget_IronTemp);
       }
@@ -540,7 +556,7 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
             }
           }
           else if(input==Rotate_Decrement_while_click || input==Rotate_Decrement){
-            if(--tip>=systemSettings.Profile.currentNumberOfTips){    // If underflowed
+            if(--tip>=systemSettings.Profile.currentNumberOfTips){          // If underflowed
               tip = systemSettings.Profile.currentNumberOfTips-1;
             }
           }
@@ -548,7 +564,7 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
             __disable_irq();
             setCurrentTip(tip);
             __enable_irq();
-            Screen_main.refresh=screen_Erase;
+            Screen_main.state=screen_Erase;
           }
           break;
         }
@@ -581,7 +597,7 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
           break;
       }
       if(input!=Rotate_Nothing){
-        IronWake(wakeButton);
+        IronWake(wakeSrc_Button);
       }
     default:
       break;
@@ -597,23 +613,23 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
 static uint8_t  drawIcons(uint8_t refresh){
   if(refresh){
     #ifdef USE_NTC
-    u8g2_DrawXBMP(&u8g2, Widget_AmbTemp->posX-tempXBM[0]-2, 0, tempXBM[0], tempXBM[1], &tempXBM[2]);
+    u8g2_DrawXBMP(&u8g2, Widget_AmbTemp->posX-tempXBM.width-2, 0, tempXBM.width, tempXBM.height, tempXBM.xbm);
     #endif
 
     #ifdef USE_VIN
-    u8g2_DrawXBMP(&u8g2, 0, 0, voltXBM[0], voltXBM[1], &voltXBM[2]);
+    u8g2_DrawXBMP(&u8g2, 0, 0, voltXBM.width, voltXBM.height, voltXBM.xbm);
     #endif
   }
 
   if(mainScr.shakeActive==1 || (mainScr.shakeActive==2 && refresh) ){ //1 = needs drawing, 2 = already drawn
     mainScr.shakeActive=2;
-    u8g2_DrawXBMP(&u8g2, 49, displayHeight-shakeXBM[1], shakeXBM[0], shakeXBM[1], &shakeXBM[2]);
+    u8g2_DrawXBMP(&u8g2, 49, displayHeight-shakeXBM.height, shakeXBM.width, shakeXBM.height, shakeXBM.xbm);
     return 1;
   }
   else if(mainScr.shakeActive==3){                                    // 3 = needs clearing
     mainScr.shakeActive=0;
     u8g2_SetDrawColor(&u8g2,BLACK);
-    u8g2_DrawBox(&u8g2, 49, displayHeight-shakeXBM[1], shakeXBM[0], shakeXBM[1]);
+    u8g2_DrawBox(&u8g2, 49, displayHeight-shakeXBM.height, shakeXBM.width, shakeXBM.height);
     u8g2_SetDrawColor(&u8g2,WHITE);
     return 1;
   }
@@ -627,9 +643,9 @@ static uint8_t  drawScreenSaver(uint8_t refresh){
     return 0;
   }
   screenSaver.update=0;
-  if(screenSaver.x>(-ScrSaverXBM[0]) ||screenSaver.x<displayWidth || screenSaver.y>(-ScrSaverXBM[1]) || screenSaver.y<displayHeight ){
+  if(screenSaver.x>(-ScrSaverXBM.width) ||screenSaver.x<displayWidth || screenSaver.y>(-ScrSaverXBM.height) || screenSaver.y<displayHeight ){
     u8g2_SetDrawColor(&u8g2, WHITE);
-    u8g2_DrawXBMP(&u8g2, screenSaver.x, screenSaver.y, ScrSaverXBM[0], ScrSaverXBM[1], &ScrSaverXBM[2]);
+    u8g2_DrawXBMP(&u8g2, screenSaver.x, screenSaver.y, ScrSaverXBM.width, ScrSaverXBM.height, ScrSaverXBM.xbm);
     return 1;
   }
 #endif
@@ -762,11 +778,11 @@ static uint8_t  drawError(uint8_t refresh){
 
   if(ironErrorFlags.Flags == (FLAG_ACTIVE | FLAG_NO_IRON)){                               // Only "No iron detected". Don't show error screen just for it
 
-    uint8_t xp = (displayWidth-iron[0]-x_mark[0]-5)/2;
+    uint8_t xp = (displayWidth-ironXBM.width-x_markXBM.width-5)/2;
     uint8_t update = 0;
 
     if(refresh){
-      u8g2_DrawXBM(&u8g2, xp, (displayHeight-iron[1])/2, iron[0], iron[1], &iron[2]);
+      u8g2_DrawXBM(&u8g2, xp, (displayHeight-ironXBM.height)/2, ironXBM.width, ironXBM.height, ironXBM.xbm);
       update = 1;
     }
 
@@ -779,11 +795,11 @@ static uint8_t  drawError(uint8_t refresh){
     if(update){
       if(x_mark_state){
         u8g2_SetDrawColor(&u8g2, BLACK);
-        u8g2_DrawBox(&u8g2, xp+iron[0]+5, (displayHeight-x_mark[1])/2, x_mark[0], x_mark[1]);
+        u8g2_DrawBox(&u8g2, xp+ironXBM.width+5, (displayHeight-x_markXBM.height)/2, x_markXBM.width, x_markXBM.height);
         u8g2_SetDrawColor(&u8g2, WHITE);
       }
       else{
-        u8g2_DrawXBM(&u8g2, xp+iron[0]+5, (displayHeight-x_mark[1])/2, x_mark[0], x_mark[1], &x_mark[2]);
+        u8g2_DrawXBM(&u8g2, xp+ironXBM.width+5, (displayHeight-x_markXBM.height)/2, x_markXBM.width, x_markXBM.height, x_markXBM.xbm);
       }
     }
     return update;
@@ -853,7 +869,7 @@ static uint8_t main_screen_draw(screen_t *scr){
 
   uint32_t currentState = (uint32_t)ironErrorFlags.Flags<<24 | (uint32_t)getCurrentMode()<<16 | mainScr.currentMode;    // Simple method to detect changes
 
-  if( lastState!=currentState || Widget_SetPoint->refresh || Widget_IronTemp->refresh || plot.update || screenSaver.update || scr->refresh==screen_Erase
+  if( lastState!=currentState || Widget_SetPoint->refresh || Widget_IronTemp->refresh || plot.update || screenSaver.update || scr->state==screen_Erase
       #ifdef USE_NTC
       || Widget_AmbTemp->refresh
       #endif
@@ -866,7 +882,7 @@ static uint8_t main_screen_draw(screen_t *scr){
     refresh=1;
   }
   if(refresh){
-    scr->refresh=screen_Erased;
+    scr->state=screen_Erased;
     fillBuffer(BLACK, fill_dma);
   }
 
@@ -913,7 +929,7 @@ static void main_screen_create(screen_t *scr){
 
   //  [ Iron Temp Widget ]
   //
-  newWidget(&w,widget_display,scr);
+  newWidget(&w,widget_display,scr,NULL);
   Widget_IronTemp = w;
   dis=extractDisplayPartFromWidget(w);
   edit=extractEditablePartFromWidget(w);
@@ -927,7 +943,7 @@ static void main_screen_create(screen_t *scr){
 
   //  [ Iron Setpoint Widget ]
   //
-  newWidget(&w,widget_editable,scr);
+  newWidget(&w,widget_editable,scr,NULL);
   Widget_SetPoint=w;
   dis=extractDisplayPartFromWidget(w);
   edit=extractEditablePartFromWidget(w);
@@ -948,7 +964,7 @@ static void main_screen_create(screen_t *scr){
   #ifdef USE_VIN
   //  [ V. Supply Widget ]
   //
-  newWidget(&w,widget_display,scr);
+  newWidget(&w,widget_display,scr,NULL);
   Widget_Voltage=w;
   dis=extractDisplayPartFromWidget(w);
   dis->getData = &main_screen_getVin;
@@ -958,7 +974,7 @@ static void main_screen_create(screen_t *scr){
   dis->number_of_dec=1;
   dis->font=u8g2_font_small;
   w->posY= 0;
-  w->posX = voltXBM[0]+2;
+  w->posX = voltXBM.width+2;
   edit=extractEditablePartFromWidget(w);
   //w->width = 40;
   #endif
@@ -966,7 +982,7 @@ static void main_screen_create(screen_t *scr){
   #ifdef USE_NTC
   //  [ Ambient Temp Widget ]
   //
-  newWidget(&w,widget_display,scr);
+  newWidget(&w,widget_display,scr,NULL);
   Widget_AmbTemp=w;
   dis=extractDisplayPartFromWidget(w);
   dis->reservedChars=7;

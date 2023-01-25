@@ -214,14 +214,14 @@ static void Cal_onEnter(screen_t *scr) {
     Currtip = getCurrentTip();
     comboResetIndex(Screen_calibration.current_widget);
     error=0;
-    setCalibrationMode(enable);
+    setIronCalibrationMode(enable);
   }
 
   setUserTemperature(0);
 }
 static void Cal_onExit(screen_t *scr) {
   if(scr!=&Screen_calibration_start && scr!=&Screen_calibration_settings ){
-    setCalibrationMode(disable);
+    setIronCalibrationMode(disable);
     setCurrentMode(backupMode);
     setUserTemperature(backupTemp);
   }
@@ -232,7 +232,7 @@ static uint8_t Cal_draw(screen_t *scr){
     error=2;
     Screen_calibration.current_widget->enabled=0;
     fillBuffer(BLACK,fill_dma);
-    scr->refresh=screen_Erased;
+    scr->state=screen_Erased;
     putStrAligned(strings[lang].CAL_Error, 10, align_center);
     putStrAligned(strings[lang].CAL_Aborting, 25, align_center);
   }
@@ -250,7 +250,7 @@ static int Cal_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_State_
       resetScreenTimer();                       // Reset screen idle timer
       error=0;
       widgetEnable(Screen_calibration.current_widget);
-      scr->refresh=screen_Erase;
+      scr->state=screen_Erase;
     }
   }
   else{
@@ -267,7 +267,7 @@ static int Cal_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_State_
 static void Cal_create(screen_t *scr) {
   widget_t* w;
 
-  newWidget(&w,widget_combo,scr);
+  newWidget(&w,widget_combo,scr, NULL);
   w->posY=10;
 
   newComboScreen(w, strings[lang]._START, screen_calibration_start, NULL);
@@ -306,13 +306,13 @@ static int Cal_Start_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_
   else{
     if(checkScreenTimer(CAL_TIMEOUT)){
       setUserTemperature(backupTemp);
-      setCalibrationMode(disable);
+      setIronCalibrationMode(disable);
       setCurrentMode(mode_sleep);
       return screen_main;
     }
   }
 
-  if(isIronInError()){
+  if(getIronError()){
     error=1;
     return last_scr;
   }
@@ -357,7 +357,7 @@ static uint8_t Cal_Start_draw(screen_t *scr){
     update_draw=0;
 
     fillBuffer(BLACK, fill_dma);
-    scr->refresh=screen_Erased;
+    scr->state=screen_Erased;
     u8g2_SetDrawColor(&u8g2, WHITE);
     u8g2_SetFont(&u8g2, u8g2_font_menu);
 
@@ -400,19 +400,20 @@ static void Cal_Start_create(screen_t *scr) {
   widget_t* w;
   displayOnly_widget_t *dis;
   editable_widget_t* edit;
+  button_widget_t* button;
 
-  newWidget(&w,widget_button,scr);
+  newWidget(&w,widget_button,scr,(void*)&button);
   Widget_Cal_Button=w;
-  w->width = 65;
-  w->posX = displayWidth - w->width - 1;
+  button->font=u8g2_font_menu;
+  button->displayString=strings[lang]._CANCEL;
+  button->selectable.tab=0;
+  button->action = &cancelAction;
+  button->font=u8g2_font_menu;
+  button->dispAlign=align_right;
   w->posY = 48;
-  ((button_widget_t*)w->content)->displayString=strings[lang]._CANCEL;
-  ((button_widget_t*)w->content)->selectable.tab=0;
-  ((button_widget_t*)w->content)->action = &cancelAction;
-  ((button_widget_t*)w->content)->font=u8g2_font_menu;
   w->enabled=0;
 
-  newWidget(&w,widget_editable,scr);
+  newWidget(&w,widget_editable,scr, NULL);
   Widget_Cal_Measured=w;
   dis=extractDisplayPartFromWidget(w);
   edit=extractEditablePartFromWidget(w);
@@ -453,7 +454,7 @@ static void Cal_Settings_OnExit(screen_t *scr) {
 }
 
 static int Cal_Settings_ProcessInput(struct screen_t *scr, RE_Rotation_t input, RE_State_t *s) {
-  if(isIronInError()){
+  if(getIronError()){
     error=1;
     return last_scr;
   }
@@ -479,7 +480,7 @@ static int Cal_Settings_ProcessInput(struct screen_t *scr, RE_Rotation_t input, 
 
   if(checkScreenTimer(CAL_TIMEOUT)){
     setUserTemperature(backupTemp);
-    setCalibrationMode(disable);
+    setIronCalibrationMode(disable);
     setCurrentMode(mode_sleep);
     return screen_main;
   }
@@ -499,7 +500,7 @@ static void Cal_Settings_create(screen_t *scr){
 
 
   // Combo Start
-  newWidget(&w,widget_combo,scr);
+  newWidget(&w,widget_combo,scr,NULL);
 
   newComboAction(w, zeroStr, &zero_setAction, &Cal_Combo_Adjust_zero);
   Cal_Combo_Adjust_zero->dispAlign=align_left;

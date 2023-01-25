@@ -30,6 +30,7 @@ typedef enum {
             screen_ntc,
           screen_system,
               screen_display,
+                screen_display_adv,
               screen_reset,
                 screen_reset_confirmation,
           screen_debug,
@@ -46,7 +47,7 @@ typedef enum {
 }screens_t;
 
 typedef struct screen_t screen_t;
-typedef enum{ screen_Idle=0, screen_Erase, screen_Erased } screenRefreshType;
+typedef enum{ screen_Idle=0, screen_Erase, screen_Erased } screenState_t;
 
 struct screen_t
 {
@@ -62,7 +63,7 @@ struct screen_t
   void (*onExit)(screen_t *scr);
   uint8_t backup_combo_scroll;
   uint8_t backup_combo_index;
-  screenRefreshType refresh;
+  screenState_t state;
   bool enabled;
   screens_t index;
 };

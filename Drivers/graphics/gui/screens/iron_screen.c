@@ -14,6 +14,7 @@ screen_t Screen_advFilter;
 static comboBox_item_t *comboItem_advFilter;
 static comboBox_item_t *comboitem_ShakeFiltering;
 static comboBox_item_t *comboitem_StandMode;
+static comboBox_item_t *comboitem_smartActiveLoad;
 static editable_widget_t *editable_IRON_StandbyTemp;
 static editable_widget_t *editable_IRON_BoostTemp;
 static editable_widget_t *editable_IRON_MaxTemp;
@@ -117,9 +118,9 @@ static void * get_reset_threshold() {
 }
 //=========================================================
 void update_Iron_menu(void){
-  bool mode = (systemSettings.Profile.WakeInputMode==mode_shake);
-  comboitem_StandMode->enabled       = !mode;
-  comboitem_ShakeFiltering->enabled  = mode;
+  comboitem_ShakeFiltering->enabled = (systemSettings.Profile.WakeInputMode==mode_shake);
+  comboitem_StandMode->enabled = (systemSettings.Profile.WakeInputMode==mode_stand);
+  comboitem_smartActiveLoad->enabled = (systemSettings.Profile.smartActiveEnabled==enable);
 }
 //=========================================================
 #ifdef USE_VIN
@@ -286,6 +287,23 @@ static void setStandMode(uint32_t *val) {
   systemSettings.Profile.StandMode = *val;
 }
 //=========================================================
+static void setsmartActiveEnable(uint32_t *val) {
+  systemSettings.Profile.smartActiveEnabled = *val;
+  update_Iron_menu();
+}
+static void * getsmartActiveEnable() {
+  temp = systemSettings.Profile.smartActiveEnabled;
+  return &temp;
+}
+//=========================================================
+static void setsmartActiveLoad(uint32_t *val) {
+  systemSettings.Profile.smartActiveLoad = *val;
+}
+static void * getsmartActiveLoad() {
+  temp = systemSettings.Profile.smartActiveLoad;
+  return &temp;
+}
+//=========================================================
 static void * getShakeFiltering() {
   temp = systemSettings.Profile.shakeFiltering;
   return &temp;
@@ -444,7 +462,7 @@ static void system_ntc_create(screen_t *scr){
 
   //  [ SYSTEM COMBO ]
   //
-  newWidget(&w,widget_combo,scr);
+  newWidget(&w,widget_combo,scr,NULL);
 
   //  [ NTC enabled Widget ]
   //
@@ -588,7 +606,7 @@ static void iron_create(screen_t *scr){
 
   //  [ IRON COMBO ]
   //
-  newWidget(&w,widget_combo, scr);
+  newWidget(&w,widget_combo,scr,NULL);
 
   //  [ Max Temp Widget ]
   //
@@ -722,7 +740,31 @@ static void iron_create(screen_t *scr){
   edit->setData = (void (*)(void *))&setStandMode;
   edit->options = strings[lang].InitMode;
   edit->numberOfOptions = 2;
-  #ifdef USE_VIN
+
+  //  [ smartActive Enabled Widget ]
+  //
+  newComboMultiOption(w, strings[lang].IRON_smartActiveEnable,&edit, NULL);
+  dis=&edit->inputData;
+  dis->reservedChars=3;
+  dis->getData = &getsmartActiveEnable;
+  edit->big_step = 1;
+  edit->step = 1;
+  edit->setData = (void (*)(void *))&setsmartActiveEnable;
+  edit->options = strings[lang].OffOn;
+  edit->numberOfOptions = 2;
+
+  //  [ smartActive Load Widget ]
+  //
+  newComboEditable(w, strings[lang].IRON_smartActiveLoad, &edit, &comboitem_smartActiveLoad);
+  dis=&edit->inputData;
+  dis->reservedChars=4;
+  dis->getData = &getsmartActiveLoad;
+  edit->big_step = 10;
+  edit->step = 1;
+  edit->max_value = 500;
+  edit->min_value = 1;
+  edit->setData = (void (*)(void *))&setsmartActiveLoad;
+#ifdef USE_VIN
   //  [ Power Widget ]
   //
   newComboEditable(w, strings[lang].IRON_Power, &edit, NULL);
@@ -749,7 +791,7 @@ static void iron_create(screen_t *scr){
   edit->setData = (void (*)(void *))&setTipImpedance;
   edit->max_value = 160;
   edit->min_value = 10;
-  #endif
+#endif
 
   //  [ Read Period Widget ]
   //
@@ -859,7 +901,7 @@ static void iron_advFilter_create(screen_t *scr){
 
   //  [ IRON COMBO ]
   //
-  newWidget(&w,widget_combo, scr);
+  newWidget(&w,widget_combo,scr,NULL);
 
   //  [ Low noise filter Widget ]
   //

@@ -13,8 +13,8 @@
 #include "board.h"
 
 #define SWSTRING          "SW: "__DATE__                            // Software version reported in settings screen
-#define SETTINGS_VERSION  18                                        // Change this if you change the settings/profile struct to prevent getting out of sync
-#define LANGUAGE_COUNT    6                                         // Number of languages
+#define SETTINGS_VERSION  21                                        // Change this if you change the settings/profile struct to prevent getting out of sync
+#define LANGUAGE_COUNT    7                                         // Number of languages
 #define NUM_PROFILES      3                                         // Number of profiles
 #define NUM_TIPS          40                                        // Number of tips for each profile
 #define TipCharSize       5                                         // String size for each tip name (Including null termination)
@@ -67,9 +67,6 @@ typedef enum{
   wake_sleep              = 2,
   wake_all                = 3,
 
-  wakeInput               = 0,
-  wakeButton              = 1,
-
   no_update               = 0,
   needs_update            = 1,
 
@@ -110,6 +107,8 @@ typedef enum{
   profile_None            = 0xff,
 
   save_Settings           = 1,
+  reboot_after_save       = 0x40,
+  save_settings_reboot    = 0x41,
   reset_Profiles          = 0x80,
   reset_Profile           = 0x81,
   reset_Settings          = 0x82,
@@ -117,6 +116,7 @@ typedef enum{
   reset_Addons            = 0x83,
 #endif
   reset_All               = 0x84,
+  reboot_mask             = 0xBF,
 
   keepProfiles            = 1,
   wipeProfiles            = 0x80,
@@ -131,6 +131,7 @@ typedef enum{
   lang_german              = 3,
   lang_turkish             = 4,
   lang_tchinese            = 5,
+  lang_bulgarian           = 6,
 
 
   dim_off                  = 0,
@@ -197,9 +198,9 @@ __attribute__((aligned(4))) typedef struct{
   uint8_t       shakeFiltering;
   uint8_t       WakeInputMode;
   uint8_t       StandMode;
+  uint8_t       smartActiveEnabled;
+  uint8_t       smartActiveLoad;
   uint8_t       : 8; // reserved
-  uint8_t       : 8;
-  uint8_t       : 8;
   uint8_t       : 8;
   uint8_t       : 8;
   uint8_t       : 8;
@@ -227,10 +228,10 @@ __attribute__((aligned(4))) typedef struct{
   uint16_t      : 16;
   uint16_t      : 16;
   tipData_t     tip[NUM_TIPS];
-  uint32_t      errorTimeout;   // todo reduce size?
-  uint32_t      boostTimeout;   // todo reduce size?
-  uint32_t      sleepTimeout;   // todo reduce size?
-  uint32_t      standbyTimeout; // todo reduce size?
+  uint32_t      errorTimeout;
+  uint32_t      boostTimeout;
+  uint32_t      sleepTimeout;
+  uint32_t      standbyTimeout;
   uint32_t      : 32; // reserved
   uint32_t      : 32;
   uint32_t      : 32;
@@ -254,30 +255,35 @@ __attribute__((aligned(4))) typedef struct{
     uint8_t       displayResRatio : 4;
 #endif
   };
+
+  unsigned      rememberLastProfile :1;
+  unsigned      rememberLastTemp    :1;
+  unsigned      rememberLastTip     :1;
+  unsigned      dim_inSleep         :1;
+  unsigned      EncoderMode         :1;
+  unsigned      debugEnabled        :1;
+  unsigned      activeDetection     :1;
+  unsigned      clone_fix           :1;
   uint8_t       dim_mode;
-  uint8_t       dim_inSleep;
   uint8_t       bootProfile;
-  __attribute__((packed)) struct {
-    uint8_t rememberLastProfile : 1;
-    uint8_t rememberLastTemp    : 1;
-    uint8_t rememberLastTip     : 1;
-    uint8_t     : 5; // unused
-  };
   uint8_t       initMode;
   uint8_t       tempUnit;
   uint8_t       tempStep;
   uint8_t       tempBigStep;
   uint8_t       guiTempDenoise;
-  uint8_t       activeDetection;
   uint8_t       buzzerMode;
   uint8_t       buttonWakeMode;
   uint8_t       shakeWakeMode;
-  uint8_t       EncoderMode;
   uint8_t       lvp;
-  uint8_t       debugEnabled;
+#ifdef SSD1306
+  uint8_t       displayVcom;
+  uint8_t       displayClk;
+  uint8_t       displayPrecharge;
+#else
   uint8_t       : 8; // reserved
   uint8_t       : 8;
   uint8_t       : 8;
+#endif
   uint8_t       : 8;
   uint8_t       : 8;
   uint8_t       : 8;

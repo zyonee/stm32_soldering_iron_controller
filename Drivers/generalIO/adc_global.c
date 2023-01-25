@@ -83,10 +83,72 @@ uint8_t ADC_Cal(void){
   return HAL_ADCEx_Calibration_Start(adc_device);
 }
 
+/* Clones have a problem with the ADC.
+*  The conversion output always have a 2 channel offset:
+*  ch0->ch2, ch1->ch3
+*  Then the DMA wraps:
+*  ch2->ch0, ch3->ch1
+*  This fix finds the channel order and compensates thsi issue.
+*/
+
+#ifndef STM32F072xB
+void clone_fix(void){
+    uint16_t **type[ADC_Num] = {
+            (uint16_t**)&TIP.adc_buffer,                        // pointers to ADC buffers pointers
+        #ifdef USE_VIN
+            (uint16_t**)&VIN.adc_buffer,
+        #endif
+        #ifdef USE_NTC
+            (uint16_t**)&NTC.adc_buffer,
+            #endif
+        #ifdef USE_VREF
+            (uint16_t**)&VREF.adc_buffer,
+        #endif
+        #ifdef ENABLE_INT_TEMP
+            (uint16_t**)&INT_TMP.adc_buffer,
+        #endif
+    };
+
+    uint16_t *adc[ADC_Num] = {                                      // Pointers to raw ADC buffer
+            (uint16_t*)&ADC_measures[0].ADC_1st,
+        #ifdef ADC_2nd
+            (uint16_t*)&ADC_measures[0].ADC_2nd,
+        #endif
+        #ifdef ADC_3rd
+            (uint16_t*)&ADC_measures[0].ADC_3rd,
+        #endif
+        #ifdef ADC_4th
+            (uint16_t*)&ADC_measures[0].ADC_4th,
+        #endif
+        #ifdef ADC_5th
+            (uint16_t*)&ADC_measures[0].ADC_5th,
+        #endif
+    };
+
+    for(uint8_t i=0;i<ADC_Num;i++){                                 // Find which channels is 1st, 2nd, etc
+        for(uint8_t j=0;j<ADC_Num;j++){
+            if(type[i] && (*type[i] == adc[j])){
+                if(j<(ADC_Num-2))
+                    *type[i] += 2;                                  // Move all channels by +2
+                else
+                    *type[i] -= (ADC_Num-2);                        // Except the last two channels, which go to the beginning
+
+                type[i] = NULL;                                     // Clear pointer so we don't use it anymore
+            }
+        }
+    }
+}
+#endif
 
 void ADC_Init(ADC_HandleTypeDef *adc){
   adc_device=adc;
   ADC_ChannelConfTypeDef sConfig = {0};
+
+#ifndef STM32F072xB
+  if(systemSettings.settings.clone_fix){
+      clone_fix();
+  }
+#endif
 
   #ifdef STM32F072xB
     adc_device->Instance->CHSELR &= ~(0x7FFFF);                                             // Disable all regular channels
@@ -180,26 +242,6 @@ void ADC_Start_DMA(){
   #endif
 
   ADC_Status=ADC_Sampling;
-/*
- // TEST CODE, DOESN'T WORK!
-#ifdef ENABLE_INT_TEMP
-  static uint8_t sampling_temp=0;
-  static uint32_t last_temp_time=0;
-  uint32_t tmp_sqr1 = 0U;
-
-  if(sampling_temp){                                                                      // If last conversion sampled temperature
-    sampling_temp=0;                                                                      // Disable In Temp channel
-    tmp_sqr1 = ADC_SQR1_L_SHIFT(ADC_Num-1);                                               // Assume Int. temp is last channel, thus matching ADC_Num
-    MODIFY_REG(adc_device->Instance->SQR1, ADC_SQR1_L, tmp_sqr1 );
-  }
-  else if(!last_temp_time || (HAL_GetTick()-last_temp_time)>999){                        // If never sampled or every 10 seconds (It's pretty slow)
-    sampling_temp=1;                                                                      // Enable temp channel
-    last_temp_time=HAL_GetTick();
-    tmp_sqr1 = ADC_SQR1_L_SHIFT(ADC_Num);
-    MODIFY_REG(adc_device->Instance->SQR1, ADC_SQR1_L, tmp_sqr1 );
-  }
-#endif
-*/
   if(HAL_ADC_Start_DMA(adc_device, (uint32_t*)ADC_measures, sizeof(ADC_measures)/ sizeof(uint16_t) )!=HAL_OK){  // Start ADC conversion now
     Error_Handler();
   }
@@ -207,7 +249,17 @@ void ADC_Start_DMA(){
 
 
 void ADC_Stop_DMA(void){
+#ifndef STM32F072xB                                             // Disable workaround for STM32F0x
+  bool clone=systemSettings.settings.clone_fix;
+  if(clone)
+      CLEAR_BIT(adc_device->Instance->CR2, ADC_CR2_CONT);
+#endif
   HAL_ADC_Stop_DMA(adc_device);
+
+#ifndef STM32F072xB
+  if(clone)
+      SET_BIT(adc_device->Instance->CR2, ADC_CR2_CONT);
+#endif
 }
 
 void ADC_Reset_measures(void){
@@ -362,15 +414,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* _hadc){
     }
 
     __HAL_TIM_SET_COUNTER(getIronPwmTimer(),0);                                             // Synchronize PWM
+#ifndef DEBUG
     if((!getIronErrorFlags().safeMode) && (getCurrentMode() != mode_sleep) && getBootCompleteFlag()){
-    #ifndef DISABLE_OUTPUT
       configurePWMpin(output_PWM);
-    #endif
     }
-
+#endif
     handle_ADC_Data();
-
-
 #if defined DEBUG_PWM && defined SWO_PRINT
     if(dbg_t!=dbg_newData){                                                                 // Save values before handleIron() updates them
       dbg_prev_TIP_Raw=last_TIP_Raw;                                                        // If filter was resetted, print values
@@ -383,7 +432,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* _hadc){
 
     handleIron();
     runAwayCheck();
-
+#ifdef DEBUG                                                                                            // In debug mode, enable the tip power at the end
+    if((!getIronErrorFlags().safeMode) && (getCurrentMode() != mode_sleep) && getBootCompleteFlag()){   // Otherwise the tip will stay on and burn if stopping at the iron function
+      configurePWMpin(output_PWM);
+    }
+#endif
     HAL_IWDG_Refresh(&hiwdg);
   }
 }
