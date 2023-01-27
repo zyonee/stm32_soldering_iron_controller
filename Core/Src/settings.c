@@ -727,7 +727,7 @@ static void resetCurrentProfile(void){
     strcpy(systemSettings.Profile.tip[9].name, "KU  ");             // Tip name
 
     systemSettings.Profile.currentNumberOfTips      = 10;
-    systemSettings.Profile.currentTip               = 0;
+    systemSettings.Profile.defaultTip               = 0;
     systemSettings.Profile.impedance                = 80;             // 8.0 Ohms
     systemSettings.Profile.power                    = 80;             // 80W
     systemSettings.Profile.noIronValue              = 4000;
