@@ -5,7 +5,7 @@
  *      Author: KocsisV
  */
 
-#include "addon_SWITCH_OFF_REMINDER_settings_screen.h"
+#include "addon_switch_off_reminder_settings_screen.h"
 #include "screen_common.h"
 
 #ifdef ENABLE_ADDON_SWITCH_OFF_REMINDER
