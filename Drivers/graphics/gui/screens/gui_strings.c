@@ -399,25 +399,25 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .settings_CALIBRATION = "KALIBRERING",
       .settings_EXIT = "AVSLUTA",
 #ifdef ENABLE_ADDONS
-      .settings_ADDONS = "ADDONS/EXTRAS",
+      .settings_ADDONS = "TILLÄGG/EXTRA",
 #endif
 
 #ifdef ENABLE_ADDON_FUME_EXTRACTOR
-      .FUME_EXTRACTOR_Title         = "FUME EXT. CTL.",
-      .FUME_EXTRACTOR_Mode          = "Mode",
-      .FUME_EXTRACTOR_Modes         = { "DISABLED", "AUTO", "ALW. ON" },
-      .FUME_EXTRACTOR_AfterRun      = "After Run",
+      .FUME_EXTRACTOR_Title         = "STYRN. UTSUG",
+      .FUME_EXTRACTOR_Mode          = "Läge",
+      .FUME_EXTRACTOR_Modes         = { "INAKTIV", "AUTO", "ALLT.PÅ" },
+      .FUME_EXTRACTOR_AfterRun      = "Extratid",
       .FUME_EXTRACTOR_AfterRunUnit  = "s",
 #endif
 
 #ifdef ENABLE_ADDON_SWITCH_OFF_REMINDER
-      .SWITCH_OFF_REMINDER_Title               = "SW OFF REMINDER",
-      .SWITCH_OFF_REMINDER_EnableDisableOption = "Reminder",
-      .SWITCH_OFF_REMINDER_InactivityDelay     = "Delay",
-      .SWITCH_OFF_REMINDER_ReminderPeriod     = "Period",
+      .SWITCH_OFF_REMINDER_Title               = "AVST.PÅMINNELSE",
+      .SWITCH_OFF_REMINDER_EnableDisableOption = "Påminnelse",
+      .SWITCH_OFF_REMINDER_InactivityDelay     = "Fördröjning",
+      .SWITCH_OFF_REMINDER_ReminderPeriod     = "Intervall",
       .SWITCH_OFF_REMINDER_TimeUnit            = "m",
-      .SWITCH_OFF_REMINDER_BeepType            = "Beep len.",
-      .SWITCH_OFF_REMINDER_BeepTypes           = {"SHORT" ,"MED." ,"LONG"},
+      .SWITCH_OFF_REMINDER_BeepType            = "Piplängd",
+      .SWITCH_OFF_REMINDER_BeepTypes           = {"KORT" ,"MED." ,"LÅNG"},
 #endif
 
       .IRON_Max_Temp = "Max temp",
@@ -430,8 +430,8 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .IRON_Wake_Mode = "Väckmetod",
       .IRON_Shake_Filtering = " Filter",
       .IRON_Stand_Mode = "Ställ-läge",
-      .IRON_smartActiveEnable = "SMART",
-      .IRON_smartActiveLoad = " LOAD",
+      .IRON_smartActiveEnable = "SmartAktiv",
+      .IRON_smartActiveLoad = " Last",
       .IRON_Power = "Effekt",
       .IRON_Heater = "Element",
       .IRON_ADC_Time = "ADO Tid",
@@ -462,18 +462,18 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .SYSTEM_LVP = "LSS",
       .SYSTEM_Gui_Time = "Gui-tid",
       .SYSTEM_DEBUG = "DEBUG",
-      .SYSTEM_CLONE_FIX = "Clone fix",
+      .SYSTEM_CLONE_FIX = "Klon-fix",
       .SYSTEM_RESET_MENU = "ÅTERST. MENY",
-      .SYSTEM_Remember = "Remember last",
-      .SYSTEM_RememberLastProfile = " Profile",
-      .SYSTEM_RememberLastTip = " Sel. tip",
+      .SYSTEM_Remember = "Minnesfunkt.",
+      .SYSTEM_RememberLastProfile = " Profil",
+      .SYSTEM_RememberLastTip = " Spetsval",
 #ifdef HAS_BATTERY
-      .SYSTEM_RememberLastTemp = " Set temp",
+      .SYSTEM_RememberLastTemp = " Temp.inst.",
 #endif
 
       .SYSTEM_DISPLAY_MENU = "DISPLAY",
 #ifndef ST756
-      .DISPLAY_ContrastOrBrightness = "Brightness",
+      .DISPLAY_ContrastOrBrightness = "Ljusstyrka",
 #else
       .DISPLAY_ContrastOrBrightness = "Kontrast",
 #endif
@@ -483,7 +483,7 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .DISPLAY_Ratio = "Ratio",
       .DISPLAY_Dim = "Dimmer",
       .DISPLAY_Dim_inSleep = " I sovläge",
-      .DISPLAY_Advanced = "ADVANCED",
+      .DISPLAY_Advanced = "AVANCERAT",
 
       .NTC_Enable_NTC = "Aktivera NTC",
       .NTC_Pull = "Pull",
@@ -507,9 +507,9 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .RESET_Reset_msg_all_2 = "SYSTEMÅTERST.?",
 
       .TIP_SETTINGS_Name = "Namn",
-      .TIP_SETTINGS_PID_kd = "PID Kp",
+      .TIP_SETTINGS_PID_kd = "PID Kd",
       .TIP_SETTINGS_PID_ki = "PID Ki",
-      .TIP_SETTINGS_PID_kp = "PID Kd",
+      .TIP_SETTINGS_PID_kp = "PID Kp",
       .TIP_SETTINGS_PID_Imax = "PID Imax",
       .TIP_SETTINGS_PID_Imin = "PID Imin",
       .TIP_SETTINGS_COPY = "KOPIERA",
@@ -1194,7 +1194,7 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .SYSTEM_LVP = "Нис.напрж",
       .SYSTEM_Gui_Time = "Опресняв.",
       .SYSTEM_DEBUG = "ГРЕШКИ",
-      .SYSTEM_CLONE_FIX = "Clone fix",
+      .SYSTEM_CLONE_FIX = "Клониран чип",
       .SYSTEM_RESET_MENU = "НУЛИРАНЕ",
       .SYSTEM_Remember = "Запазв.послед.",
       .SYSTEM_RememberLastProfile = " Профил",
@@ -1215,15 +1215,15 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .DISPLAY_Ratio = "Съотношение",
       .DISPLAY_Dim = "Затъмяване",
       .DISPLAY_Dim_inSleep = " При сън",
-      .DISPLAY_Advanced = "ADVANCED",
+      .DISPLAY_Advanced = "РАЗШИРЕНИ",
 
       .NTC_Enable_NTC = "NTC",
       .NTC_Pull = "Pull",
       .NTC__Res = " Съпротив.",
       .NTC__Beta = " Бета",
       .NTC_NTC_Detect = "NTC Detect",
-      .NTC__High = " High",
-      .NTC__Low = " Low",
+      .NTC__High = " Високо",
+      .NTC__Low = " Ниско",
 
       .RESET_Reset_Settings = "Настройки",
       .RESET_Reset_Profile = "Профил",
@@ -1248,16 +1248,16 @@ const strings_t strings[LANGUAGE_COUNT] = {
       .TIP_SETTINGS_DELETE = "ПРЕМАХВАНЕ",
 
       .CAL_ZeroSet = "Нулева t\260  ",    // Must be 11 chars long
-      .CAL_Sampling = "Взем. проба",      // Must be 11 chars long
+      .CAL_Sampling = "Взема проба",      // Must be 11 chars long
       .CAL_Captured = "Проба взета",      // Must be 11 chars long
       .CAL_Step = "СТЪПКА:",
       .CAL_Wait = "WAIT...",
       .CAL_Measured = "ИЗМЕРЕНО:",
       .CAL_Success = "ГОТОВО!",
       .CAL_Failed = "ГРЕШКА!",
-      .CAL_DELTA_HIGH_1 = "DELTA TOO HIGH!",
-      .CAL_DELTA_HIGH_2 = "Adjust manually",
-      .CAL_DELTA_HIGH_3 = "and try again",
+      .CAL_DELTA_HIGH_1 = "ГОЛЯМА РАЗЛИКА!",
+      .CAL_DELTA_HIGH_2 = "Настройте ръчно и",
+      .CAL_DELTA_HIGH_3 = "пробвайте отново",
       .CAL_Error = "ОТКРИТА ГРЕШКА!",
       .CAL_Aborting = "Прекъсване...",
 
