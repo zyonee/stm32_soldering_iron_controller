@@ -4,7 +4,6 @@
  *  Created on: 2022. ápr. 19.
  *      Author: KocsisV
  */
-
 #include "addon_switch_off_reminder_settings_screen.h"
 #include "screen_common.h"
 
@@ -83,7 +82,7 @@ static void addons_screen_switch_off_reminder_create(screen_t *scr)
   widget_t* w;
   editable_widget_t* edit;
 
-  newWidget(&w,widget_combo,scr);
+  newWidget(&w,widget_combo,scr,NULL);
 
   // On/off
   newComboMultiOption(w, strings[lang].SWITCH_OFF_REMINDER_EnableDisableOption, &edit, NULL);
