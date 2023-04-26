@@ -23,7 +23,7 @@ static editable_widget_t *editable_tip_settings_cal400;
 //=========================================================
 void sortTips(void){
   uint8_t min;
-  char current[TipCharSize];
+  char current[TIP_LEN+1];
 
   strcpy (current, getCurrentTip()->name);                                                        // Copy tip name being used in the system
 
@@ -122,9 +122,22 @@ static void setCal400(int32_t *val) {
 }
 //=========================================================
 static int tip_save(widget_t *w, RE_Rotation_t input) {
-  __disable_irq();
+  uint8_t end=0;
+  for(uint8_t i=0; i<TIP_LEN; i++){                                                                             // Clear trailing spaces
+      if (backupTip.name[i] == ' '){                                                                            // Find space, store index
+        if(!end)
+          end = i;
+      }
+      else{
+        end=0;                                                                                                  // Clear index if other char found
+      }
+  }
+  if(end){
+    backupTip.name[end] = 0;                                                                                    // Terminate string
+  }
+// TODO Hard Fault here when TIP_LEN >9!
   systemSettings.Profile.tip[Selected_Tip] = backupTip;                                                         // Store tip data
-  __enable_irq();
+
   if(Selected_Tip==systemSettings.Profile.currentNumberOfTips){                                                 // If new tip
     systemSettings.Profile.currentNumberOfTips++;                                                               // Increase number of tips in the system
     setCurrentTip(Selected_Tip);                                                                                // Activate the newly copied tip, its highly likely that the user want's to calibrate it.
@@ -226,7 +239,16 @@ static void tip_settings_onEnter(screen_t *scr){
   else{
     backupTip = systemSettings.Profile.tip[Selected_Tip];                                                       // Copy selected tip
     comboitem_tip_settings_delete->enabled = (systemSettings.Profile.currentNumberOfTips>1);                    // If more than 1 tip in the system, enable delete
-    comboitem_tip_settings_copy->enabled = (systemSettings.Profile.currentNumberOfTips<NUM_TIPS);                // If tip slots available, enable copy button
+    comboitem_tip_settings_copy->enabled = (systemSettings.Profile.currentNumberOfTips<NUM_TIPS);               // If tip slots available, enable copy button
+
+    for(uint8_t i=0; i<TIP_LEN; i++){                                                                   // Needs to be done so the string can be edited easily
+      if (!backupTip.name[i]){                                                                                // Find end of string
+        while(i < TIP_LEN){                                                                       // Fill with spaces
+          backupTip.name[i++] = ' ';
+        }
+      }
+    }
+    backupTip.name[TIP_LEN] = 0;                                                                          // Terminate string
   }
 }
 
@@ -244,7 +266,7 @@ static void tip_settings_create(screen_t *scr){
   //
   newComboEditableString(w, strings[lang].TIP_SETTINGS_Name, &edit, NULL, backupTip.name);
   dis=&edit->inputData;
-  dis->reservedChars=TipCharSize-1;
+  dis->reservedChars=TIP_LEN;
   dis->getData = &getTipName;
   dis->type = field_string;
   edit->big_step = 1;

@@ -479,6 +479,7 @@ void restoreSettings() {
   if(flashGlobalSettings.settings.version!=defaultSettings.version){    // Silent reset if version mismatch
     resetSystemSettings();
     saveSettings(wipeProfiles);
+    resetAddonSettings();
   }
   else{
     systemSettings.settings = flashGlobalSettings.settings;
@@ -643,7 +644,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[0].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[0].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[0].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[0].name, "BL  ");             // Tip name
+    strcpy(systemSettings.Profile.tip[0].name, "T12-BL");             // Tip name
 
     systemSettings.Profile.tip[1].calADC_At_250   = T12_ILS_Cal250;
     systemSettings.Profile.tip[1].calADC_At_400   = T12_ILS_Cal400;
@@ -652,7 +653,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[1].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[1].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[1].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[1].name, "ILS ");             // Tip name
+    strcpy(systemSettings.Profile.tip[1].name, "T12-ILS");             // Tip name
 
     systemSettings.Profile.tip[2].calADC_At_250   = T12_BC1_Cal250;
     systemSettings.Profile.tip[2].calADC_At_400   = T12_BC1_Cal400;
@@ -661,7 +662,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[2].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[2].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[2].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[2].name, "BC1 ");             // Tip name
+    strcpy(systemSettings.Profile.tip[2].name, "T12-BC1");             // Tip name
 
     systemSettings.Profile.tip[3].calADC_At_250   = T12_BC2_Cal250;
     systemSettings.Profile.tip[3].calADC_At_400   = T12_BC2_Cal400;
@@ -670,7 +671,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[3].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[3].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[3].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[3].name, "BC2 ");             // Tip name
+    strcpy(systemSettings.Profile.tip[3].name, "T12-BC2");             // Tip name
 
     systemSettings.Profile.tip[4].calADC_At_250   = T12_BC3_Cal250;
     systemSettings.Profile.tip[4].calADC_At_400   = T12_BC3_Cal400;
@@ -679,7 +680,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[4].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[4].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[4].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[4].name, "BC3 ");             // Tip name
+    strcpy(systemSettings.Profile.tip[4].name, "T12-BC3");             // Tip name
 
     systemSettings.Profile.tip[5].calADC_At_250   = T12_D12_Cal250;
     systemSettings.Profile.tip[5].calADC_At_400   = T12_D12_Cal400;
@@ -688,7 +689,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[5].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[5].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[5].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[5].name, "D12 ");             // Tip name
+    strcpy(systemSettings.Profile.tip[5].name, "T12-D12");             // Tip name
 
     systemSettings.Profile.tip[6].calADC_At_250   = T12_D16_Cal250;
     systemSettings.Profile.tip[6].calADC_At_400   = T12_D16_Cal400;
@@ -697,7 +698,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[6].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[6].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[6].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[6].name, "D16 ");             // Tip name
+    strcpy(systemSettings.Profile.tip[6].name, "T12-D16");             // Tip name
 
     systemSettings.Profile.tip[7].calADC_At_250   = T12_JO2_Cal250;
     systemSettings.Profile.tip[7].calADC_At_400   = T12_JO2_Cal400;
@@ -706,7 +707,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[7].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[7].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[7].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[7].name, "JO2 ");             // Tip name
+    strcpy(systemSettings.Profile.tip[7].name, "T12-JO2");             // Tip name
 
     systemSettings.Profile.tip[8].calADC_At_250   = T12_K_Cal250;
     systemSettings.Profile.tip[8].calADC_At_400   = T12_K_Cal400;
@@ -715,7 +716,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[8].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[8].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[8].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[8].name, "K   ");             // Tip name
+    strcpy(systemSettings.Profile.tip[8].name, "T12-K");             // Tip name
 
     systemSettings.Profile.tip[9].calADC_At_250   = T12_KU_Cal250;
     systemSettings.Profile.tip[9].calADC_At_400   = T12_KU_Cal400;
@@ -724,7 +725,7 @@ static void resetCurrentProfile(void){
     systemSettings.Profile.tip[9].PID.Kd          = 1200;           // val = /1.000.000
     systemSettings.Profile.tip[9].PID.maxI        = 85;             // val = /100
     systemSettings.Profile.tip[9].PID.minI        = 0;              // val = /100
-    strcpy(systemSettings.Profile.tip[9].name, "KU  ");             // Tip name
+    strcpy(systemSettings.Profile.tip[9].name, "T12-KU");             // Tip name
 
     systemSettings.Profile.currentNumberOfTips      = 10;
     systemSettings.Profile.defaultTip               = 0;
@@ -748,7 +749,7 @@ static void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.minI        = 0;
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);
     }
-    strcpy(systemSettings.Profile.tip[0].name, "C245");
+    strcpy(systemSettings.Profile.tip[0].name, "C245-963");
     systemSettings.Profile.currentNumberOfTips      = 1;
     systemSettings.Profile.defaultTip               = 0;
     systemSettings.Profile.impedance                = 26;
@@ -770,7 +771,7 @@ static void resetCurrentProfile(void){
       systemSettings.Profile.tip[x].PID.minI        = 0;
       strcpy(systemSettings.Profile.tip[x].name, _BLANK_TIP);
     }
-    strcpy(systemSettings.Profile.tip[0].name, "C210");
+    strcpy(systemSettings.Profile.tip[0].name, "C210-018");
     systemSettings.Profile.currentNumberOfTips      = 1;
     systemSettings.Profile.defaultTip             = 0;
     systemSettings.Profile.power                  = 80;
