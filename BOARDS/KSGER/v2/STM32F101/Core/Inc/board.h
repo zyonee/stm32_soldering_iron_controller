@@ -75,32 +75,11 @@
 #define T12_Cal250        1900
 #define T12_Cal400        2800
 
-#define T12_BL_Cal250     1343
-#define T12_BL_Cal400     2591
-#define T12_ILS_Cal250    1227
-#define T12_ILS_Cal400    2782
-#define T12_BC1_Cal250    1244
-#define T12_BC1_Cal400    2663
-#define T12_BC2_Cal250    1198
-#define T12_BC2_Cal400    2689
-#define T12_BC3_Cal250    1160
-#define T12_BC3_Cal400    2522
-#define T12_D12_Cal250    1194
-#define T12_D12_Cal400    2503
-#define T12_D16_Cal250    1156
-#define T12_D16_Cal400    2472
-#define T12_JO2_Cal250    1197
-#define T12_JO2_Cal400    2504
-#define T12_K_Cal250      1236
-#define T12_K_Cal400      2646
-#define T12_KU_Cal250     1173
-#define T12_KU_Cal400     2730
+#define C210_Cal250       800
+#define C210_Cal400       1500
 
-#define C210_Cal250       450
-#define C210_Cal400       700
-
-#define C245_Cal250       900
-#define C245_Cal400       1000
+#define C245_Cal250       1800
+#define C245_Cal400       2800
 #endif
 
 

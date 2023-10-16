@@ -9,7 +9,7 @@
 #include "screen_common.h"
 
 #define SCREENSAVER
-#define PWR_BAR_WIDTH   32
+#define PWR_BAR_WIDTH   52
 #define SCALE_FACTOR    (int)((65536*PWR_BAR_WIDTH*1.005)/100)
 
 //-------------------------------------------------------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ xbm_t ScrSaverXBM = {
  },
 };
 #endif
- xbm_t ironXBM = {
+ xbm_t ironXBM_T12 = {
   .width=105,
   .height=7,
   .xbm=(const uint8_t[]){
@@ -114,6 +114,21 @@ xbm_t ScrSaverXBM = {
     0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1C, 0x00,
     0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0x07, 0x00,
+  },
+};
+ xbm_t ironXBM_JBC = {
+  .width=105,
+  .height=7,
+  .xbm=(const uint8_t[]){
+    0x00, 0x00, 0xF0, 0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0xF8, 0xFF,
+    0x00, 0x00, 0x00, 0x00, 0x1C, 0x00, 0x00, 0x00, 0xC0, 0xFF, 0xFF, 0xFF,
+    0x0F, 0x80, 0x07, 0x00, 0x80, 0xFF, 0x0F, 0x00, 0x00, 0x00, 0x80, 0x01,
+    0x00, 0x00, 0x08, 0x80, 0x3F, 0x00, 0xFF, 0x03, 0x07, 0x00, 0x00, 0x00,
+    0x00, 0x01, 0x00, 0x00, 0x08, 0x80, 0xFF, 0x01, 0x80, 0xFF, 0x0F, 0x00,
+    0x00, 0x00, 0x80, 0x01, 0x00, 0x00, 0x08, 0x80, 0x3F, 0x00, 0x00, 0x00,
+    0x1C, 0x00, 0x00, 0x00, 0xC0, 0xFF, 0xFF, 0xFF, 0x0F, 0x80, 0x07, 0x00,
+    0x00, 0x00, 0xF0, 0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0xF8, 0xFF,
+    0x00, 0x00,
   },
 };
 xbm_t x_markXBM = {
@@ -412,7 +427,7 @@ int main_screenProcessInput(screen_t * scr, RE_Rotation_t input, RE_State_t *sta
 
   // If at main temperature screen
   if(mainScr.currentMode == main_irontemp && (input == Rotate_Increment || input == Rotate_Decrement || input == Click)){
-    if(getIronWakeSource()==wakeSrc_Button && !checkIronModeTimer(250)){  // To avoid unwanted mode changing, ignore action if iron mode was set <250ms ago
+    if(getIronWakeSource()==wakeSrc_Button && !checkIronModeTimer(500)){  // To avoid unwanted mode change, ignore action if iron mode was set <500ms ago
         input = Rotate_Nothing;
       }
       else if(currentIronMode==mode_boost){                               // If iron in boost mode, return to normal mode, don't process the input
@@ -634,13 +649,13 @@ static uint8_t  drawIcons(uint8_t refresh){
 
   if(mainScr.shakeActive==1 || (mainScr.shakeActive==2 && refresh) ){ //1 = needs drawing, 2 = already drawn
     mainScr.shakeActive=2;
-    u8g2_DrawXBMP(&u8g2, displayWidth-shakeXBM.width-PWR_BAR_WIDTH-9, displayHeight-shakeXBM.height, shakeXBM.width, shakeXBM.height, shakeXBM.xbm);
+    u8g2_DrawXBMP(&u8g2, displayWidth-shakeXBM.width-PWR_BAR_WIDTH-8, displayHeight-shakeXBM.height, shakeXBM.width, shakeXBM.height, shakeXBM.xbm);
     return 1;
   }
   else if(mainScr.shakeActive==3){                                    // 3 = needs clearing
     mainScr.shakeActive=0;
     u8g2_SetDrawColor(&u8g2,BLACK);
-    u8g2_DrawBox(&u8g2, displayWidth-shakeXBM.width-PWR_BAR_WIDTH-9, displayHeight-shakeXBM.height, shakeXBM.width, shakeXBM.height);
+    u8g2_DrawBox(&u8g2, displayWidth-shakeXBM.width-PWR_BAR_WIDTH-8, displayHeight-shakeXBM.height, shakeXBM.width, shakeXBM.height);
     u8g2_SetDrawColor(&u8g2,WHITE);
     return 1;
   }
@@ -789,11 +804,18 @@ static uint8_t  drawError(uint8_t refresh){
 
   if(ironErrorFlags.Flags == (FLAG_ACTIVE | FLAG_NO_IRON)){                               // Only "No iron detected". Don't show error screen just for it
 
-    uint8_t xp = (displayWidth-ironXBM.width-x_markXBM.width-5)/2;
-    uint8_t update = 0;
+    uint8_t xp, update = 0;
+
+    if(systemSettings.currentProfile == profile_T12)
+      xp = (displayWidth-ironXBM_T12.width-x_markXBM.width-5)/2;
+    else
+      xp = (displayWidth-ironXBM_JBC.width-x_markXBM.width-5)/2;
 
     if(refresh){
-      u8g2_DrawXBM(&u8g2, xp, (displayHeight-ironXBM.height)/2, ironXBM.width, ironXBM.height, ironXBM.xbm);
+      if(systemSettings.currentProfile == profile_T12)
+        u8g2_DrawXBM(&u8g2, xp, (displayHeight-ironXBM_T12.height)/2, ironXBM_T12.width, ironXBM_T12.height, ironXBM_T12.xbm);
+      else
+        u8g2_DrawXBM(&u8g2, xp, (displayHeight-ironXBM_JBC.height)/2, ironXBM_JBC.width, ironXBM_JBC.height, ironXBM_JBC.xbm);
       update = 1;
     }
 
@@ -806,11 +828,17 @@ static uint8_t  drawError(uint8_t refresh){
     if(update){
       if(x_mark_state){
         u8g2_SetDrawColor(&u8g2, BLACK);
-        u8g2_DrawBox(&u8g2, xp+ironXBM.width+5, (displayHeight-x_markXBM.height)/2, x_markXBM.width, x_markXBM.height);
+        if(systemSettings.currentProfile == profile_T12)
+          u8g2_DrawBox(&u8g2, xp+ironXBM_T12.width+5, (displayHeight-x_markXBM.height)/2, x_markXBM.width, x_markXBM.height);
+        else
+          u8g2_DrawBox(&u8g2, xp+ironXBM_JBC.width+5, (displayHeight-x_markXBM.height)/2, x_markXBM.width, x_markXBM.height);
         u8g2_SetDrawColor(&u8g2, WHITE);
       }
       else{
-        u8g2_DrawXBM(&u8g2, xp+ironXBM.width+5, (displayHeight-x_markXBM.height)/2, x_markXBM.width, x_markXBM.height, x_markXBM.xbm);
+        if(systemSettings.currentProfile == profile_T12)
+          u8g2_DrawXBM(&u8g2, xp+ironXBM_T12.width+5, (displayHeight-x_markXBM.height)/2, x_markXBM.width, x_markXBM.height, x_markXBM.xbm);
+        else
+          u8g2_DrawXBM(&u8g2, xp+ironXBM_JBC.width+5, (displayHeight-x_markXBM.height)/2, x_markXBM.width, x_markXBM.height, x_markXBM.xbm);
       }
     }
     return update;
