@@ -38,9 +38,9 @@ Video of operation here: (Project in active development, the features will chang
 
 ## Compatibility
 
-Check [Boards readme](Readme_files/boards.md) for quick identification.<br>
-[BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder contains the build profiles and some schematics / pictures.<br>
-Visit [Dreamcat4 T12 controllers](https://github.com/dreamcat4/t12-t245-controllers-docs), for more pictures and schematics.<br>
+Check [Boards readme](Readme_files/boards.md) for quick board identification.<br>
+Visit [Dreamcat4 T12 controllers](https://github.com/dreamcat4/t12-t245-controllers-docs) for more pictures and schematics.<br>
+[BOARDS](https://github.com/deividAlfa/stm32_soldering_iron_controller/tree/master/BOARDS) folder contains the build profiles.<br>
 **KSGER Combo station is not supported!**<br><br>
 The actual requirements are 10KB RAM and 64KB **(\*)** flash.<br>
 **(\*)** Currently the firmware has surpassed the 64KB limit, and uses the additional undocumented 64KB flash block.<br>
@@ -94,8 +94,16 @@ Any difference in the pinout will require firmware tuning, although one of the m
 There are some hacks / vulnerabilities that can be used to backup protected firmware, more details here: [STM32 power glitching timing attack](https://github.com/dreamcat4/t12-t245-controllers-docs/tree/master/tools/software/STM32CubeIDE#option-2-power-glitching-timing-attack
 )
 
+### Battery mod
+Some commonly changed settings (Temperature setpoint, tip/profile selection) can be saved to the RTC SRAM, reducing flash wear.<br>
+The RTC needs a battery connected to STM32's VBAT pin, most boards have a battery connector for this.<br>
+- Install a 3.3V cell battery. Some boards have a resistor connected between VBAT pin and GND, will drain the battery, remove it.<br>
+- Enable [`SYSTEM`](Readme_files/Operation.md#system) > `Battery´ .
+
 ### Display issues
-If the display has right/left line like this picture: Go to [`System`](Readme_files/Operation.md#system) > `Offset` menu and adjust the value until it's centered.<br>
+If the display has right/left line or is vertically shifted:<br>
+- Go to [`System`](Readme_files/Operation.md#system) > `Display` menu.<br>
+- Adjust `X/Y Offsets` until it's centered.<br>
 <img src="/Readme_files/oled_offset.jpg" width="320">
 
 ### Temperature unstability

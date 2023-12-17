@@ -80,6 +80,9 @@ The PID (Proportional, Integral, Derivative) algorithm determines the PWM duty c
   Rotate to change the selected tip, click or wait 2 seconds to select and return to normal mode. Long-click to enter the tip settings.<br>
   When inserting a new tip, this setting will be enabled automatically for 5 seconds.<br>
   To avoid unintended behaviour, at least 3 seconds must pass between tip changes, lower than that will be considered noise or momentary connection break.<br>
+- **Profile selection**<br>
+  Issue a drag-rotation while in Tip selection mode to show the profile selection.<br>
+  Rotate to change the selected profiler (T12, C210, C245), click or wait 2 seconds to select and return to normal mode.
 - **System menu**<br>
   A long click will enter the system menu (Except while in tip selection/setpoint adjustment).<br>
 
@@ -232,8 +235,6 @@ Return to system menu.<br>
 General global settings for the controller.<br>
   - **Language**<br>
 Sets the display language.<br>
-  - **Profile**<br>
-Sets which iron profile (__T12__, __C210__, __C245__) to use. Each profile has its own dataset (including the list of tips). <br>
   - **Boot**<br>
 Operation mode when powered on (__RUN__, __STANDBY__ or __SLEEP__).<br>
 This option is disabled in stand mode.<br>
@@ -274,10 +275,8 @@ If the display readings were updated at the same speed, it would be impossible t
 This setting defines the time in mS where the main screen readings are updated (voltage, temperatures).<br>
 The effective update rate will be limited by the ADC read frequency.<br> 
 Use a higher setting for less "flickery" display (more steady values).<br>
-  - **Remember last profile/tip/temp**<br>
-If set to *ON* the station will remember the last used profile/tip/temp between power cycles. Enabling these increases flash wear if the board has no backup battery. Saving the last used temperature is only available if the board has a battery.<br>
-If set to *OFF*, the station will default back to the last saved profile or selected tip and the default temperature on the next power cycle. If you want to change the default, set the given *remember* option to *ON*, make your change in the other menus (profile or select a different tip), exit to the main screen, wait 10 second (the controller writes the settings in the background), then switch the *remember* option to *OFF* again.<br>
-Keeping the last used temperature is only available with a backup battery. The last used temperature and tip is profile specific. If you don't change the profile and tip that often, you can leave these settings *ON*, but if you change the tip/profile frequently it is recommended to switch it *OFF*. The controller has a minimum guaranteed 10000 write cycles to the flash.
+  - **Battery**<br>
+If your board has the RTC batery installed, enabling this option will store temperature, tip and profile in the RTC SRAM, reducing flash wear.<br>
   - **DEBUG**<br>
 Enable debugging menu.<br>
   - **Clone fix**<br>
